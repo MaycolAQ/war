@@ -2,216 +2,93 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Tanques de guerra</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simulación de Tanque - Código Puro</title>
   <style>
-    body {
-      margin: 0;
-      display: grid;
-      min-height: 100vh;
-      place-items: center;
-      background: #202820;
-      color: white;
-      font: 16px system-ui, sans-serif;
-    }
-
-    canvas {
-      max-width: 100%;
-      border: 3px solid #a7b38d;
-      background: #657354;
-    }
-
-    p {
-      text-align: center;
-    }
+    body { margin: 0; background: #111; overflow: hidden; display: flex; flex-direction: column; align-items: center; font-family: sans-serif; color: white; }
+    canvas { background: linear-gradient(#1e293b, #475569); width: 100vw; height: 85vh; display: block; }
+    button { margin-top: 10px; padding: 12px 24px; font-size: 16px; font-weight: bold; background: #ef4444; color: white; border: none; border-radius: 8px; cursor: pointer; }
   </style>
 </head>
 <body>
-  <main>
-    <p>Muévete con WASD o las flechas. Dispara con espacio.</p>
-    <canvas id="game" width="800" height="500"></canvas>
-  </main>
+  <canvas id="scene"></canvas>
+  <button onclick="fireCannon()">DISPARAR CAÑÓN</button>
 
   <script>
-    const canvas = document.querySelector("#game");
-    const ctx = canvas.getContext("2d");
+    const canvas = document.getElementById('scene');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight * 0.85;
 
-    const keys = new Set();
-    const player = { x: 400, y: 250, size: 24, speed: 3, hp: 5, dir: 0 };
-    const bullets = [];
-    const enemies = [];
-    let score = 0;
-    let gameOver = false;
-    let lastShot = 0;
-    let lastSpawn = 0;
+    let tankX = canvas.width * 0.25;
+    let recoil = 0;
+    let particles = [];
+    let shells = [];
 
-    addEventListener("keydown", (event) => {
-      keys.add(event.key.toLowerCase());
-      if (event.code === "Space") {
-        event.preventDefault();
-        keys.add("space");
-      }
-      if (gameOver && event.key.toLowerCase() === "r") restart();
-    });
-
-    addEventListener("keyup", (event) => {
-      keys.delete(event.key.toLowerCase());
-      if (event.code === "Space") keys.delete("space");
-    });
-
-    function restart() {
-      player.x = 400;
-      player.y = 250;
-      player.hp = 5;
-      bullets.length = 0;
-      enemies.length = 0;
-      score = 0;
-      gameOver = false;
-      requestAnimationFrame(loop);
-    }
-
-    function spawnEnemy() {
-      const side = Math.floor(Math.random() * 4);
-      const x = side === 0 ? 0 : side === 1 ? canvas.width : Math.random() * canvas.width;
-      const y = side === 2 ? 0 : side === 3 ? canvas.height : Math.random() * canvas.height;
-      enemies.push({ x, y, size: 22, speed: 0.7 + Math.random() * 0.5 });
-    }
-
-    function drawTank(x, y, color, angle, size) {
-      ctx.save();
-      ctx.translate(x, y);
-      ctx.rotate(angle);
-      ctx.fillStyle = color;
-      ctx.fillRect(-size / 2, -size / 2, size, size);
-      ctx.fillStyle = "#222";
-      ctx.fillRect(0, -4, size * 0.8, 8);
-      ctx.restore();
-    }
-
-    function shoot(now) {
-      if (keys.has("space") && now - lastShot > 300) {
-        bullets.push({
-          x: player.x + Math.cos(player.dir) * 20,
-          y: player.y + Math.sin(player.dir) * 20,
-          vx: Math.cos(player.dir) * 6,
-          vy: Math.sin(player.dir) * 6,
+    function fireCannon() {
+      recoil = 15;
+      const barrelEndX = tankX + 110;
+      const barrelEndY = canvas.height * 0.72 - 38;
+      shells.push({ x: barrelEndX, y: barrelEndY, vx: 18, vy: -1.5 });
+      for (let i = 0; i < 25; i++) {
+        particles.push({
+          x: barrelEndX, y: barrelEndY,
+          vx: Math.random() * 8 + 2, vy: (Math.random() - 0.5) * 6,
+          size: Math.random() * 12 + 4, alpha: 1, color: i % 2 === 0 ? '#f97316' : '#94a3b8'
         });
-        lastShot = now;
-      }
-    }
-
-    function update(now) {
-      if (gameOver) return;
-
-      let dx = 0;
-      let dy = 0;
-      if (keys.has("arrowleft") || keys.has("a")) dx--;
-      if (keys.has("arrowright") || keys.has("d")) dx++;
-      if (keys.has("arrowup") || keys.has("w")) dy--;
-      if (keys.has("arrowdown") || keys.has("s")) dy++;
-
-      if (dx || dy) {
-        const length = Math.hypot(dx, dy);
-        dx /= length;
-        dy /= length;
-        player.x += dx * player.speed;
-        player.y += dy * player.speed;
-        player.dir = Math.atan2(dy, dx);
-      }
-
-      player.x = Math.max(16, Math.min(canvas.width - 16, player.x));
-      player.y = Math.max(16, Math.min(canvas.height - 16, player.y));
-
-      shoot(now);
-
-      if (now - lastSpawn > 1500) {
-        spawnEnemy();
-        lastSpawn = now;
-      }
-
-      for (const enemy of enemies) {
-        const angle = Math.atan2(player.y - enemy.y, player.x - enemy.x);
-        enemy.x += Math.cos(angle) * enemy.speed;
-        enemy.y += Math.sin(angle) * enemy.speed;
-
-        if (Math.hypot(player.x - enemy.x, player.y - enemy.y) < 28) {
-          player.hp--;
-          enemy.x = -100;
-          if (player.hp <= 0) gameOver = true;
-        }
-      }
-
-      for (const bullet of bullets) {
-        bullet.x += bullet.vx;
-        bullet.y += bullet.vy;
-      }
-
-      for (let i = enemies.length - 1; i >= 0; i--) {
-        for (let j = bullets.length - 1; j >= 0; j--) {
-          if (Math.hypot(enemies[i].x - bullets[j].x, enemies[i].y - bullets[j].y) < 20) {
-            enemies.splice(i, 1);
-            bullets.splice(j, 1);
-            score++;
-            break;
-          }
-        }
-      }
-
-      for (let i = bullets.length - 1; i >= 0; i--) {
-        const b = bullets[i];
-        if (b.x < 0 || b.x > canvas.width || b.y < 0 || b.y > canvas.height) {
-          bullets.splice(i, 1);
-        }
       }
     }
 
     function draw() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const groundY = canvas.height * 0.72;
 
-      ctx.fillStyle = "#72805c";
-      for (let x = 20; x < canvas.width; x += 40) {
-        for (let y = 20; y < canvas.height; y += 40) {
-          ctx.fillRect(x, y, 2, 2);
-        }
-      }
+      // Terreno
+      ctx.fillStyle = '#334155';
+      ctx.fillRect(0, groundY, canvas.width, canvas.height - groundY);
 
-      for (const bullet of bullets) {
-        ctx.fillStyle = "#ffe28a";
-        ctx.beginPath();
-        ctx.arc(bullet.x, bullet.y, 4, 0, Math.PI * 2);
-        ctx.fill();
-      }
+      // Movimiento y retroceso suave
+      tankX += 0.4;
+      if (tankX > canvas.width + 100) tankX = -150;
+      recoil *= 0.85;
+      const x = tankX - recoil;
 
-      for (const enemy of enemies) {
-        drawTank(enemy.x, enemy.y, "#a64238", 0, enemy.size);
-      }
+      // Orugas
+      ctx.fillStyle = '#0f172a';
+      ctx.beginPath();
+      ctx.roundRect(x - 60, groundY - 22, 130, 22, 10);
+      ctx.fill();
 
-      drawTank(player.x, player.y, "#4aa3df", player.dir, player.size);
+      // Chasis
+      ctx.fillStyle = '#3f6212';
+      ctx.fillRect(x - 50, groundY - 40, 110, 20);
 
-      ctx.fillStyle = "white";
-      ctx.font = "18px system-ui";
-      ctx.fillText(`Puntos: ${score}   Vida: ${player.hp}`, 16, 28);
+      // Torreta y cañón
+      ctx.fillStyle = '#4d7c0f';
+      ctx.fillRect(x - 25, groundY - 56, 60, 18);
+      ctx.fillRect(x + 35, groundY - 50, 75, 7);
 
-      if (gameOver) {
-        ctx.fillStyle = "rgba(0, 0, 0, 0.65)";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = "white";
-        ctx.textAlign = "center";
-        ctx.font = "36px system-ui";
-        ctx.fillText("Fin de la partida", canvas.width / 2, canvas.height / 2);
-        ctx.font = "18px system-ui";
-        ctx.fillText("Pulsa R para volver a jugar", canvas.width / 2, canvas.height / 2 + 36);
-        ctx.textAlign = "left";
-      }
+      // Proyectiles
+      shells.forEach((s, idx) => {
+        s.x += s.vx; s.y += s.vy; s.vy += 0.05;
+        ctx.fillStyle = '#fde047';
+        ctx.beginPath(); ctx.arc(s.x, s.y, 4, 0, Math.PI * 2); ctx.fill();
+        if (s.x > canvas.width) shells.splice(idx, 1);
+      });
+
+      // Humo y fuego
+      particles.forEach((p, idx) => {
+        p.x += p.vx; p.y += p.vy; p.alpha -= 0.025; p.size *= 1.02;
+        ctx.globalAlpha = Math.max(0, p.alpha);
+        ctx.fillStyle = p.color;
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = 1;
+        if (p.alpha <= 0) particles.splice(idx, 1);
+      });
+
+      requestAnimationFrame(draw);
     }
-
-    function loop(now) {
-      update(now);
-      draw();
-      if (!gameOver) requestAnimationFrame(loop);
-    }
-
-    requestAnimationFrame(loop);
+    draw();
   </script>
 </body>
 </html>
