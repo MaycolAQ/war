@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tanques de guerra</title>
+  <style>
+    body {
+      margin: 0;
+      display: grid;
+      min-height: 100vh;
+      place-items: center;
+      background: #202820;
+      color: white;
+      font: 16px system-ui, sans-serif;
+    }
+
+    canvas {
+      max-width: 100%;
+      border: 3px solid #a7b38d;
+      background: #657354;
+    }
+
+    p {
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <p>Muévete con WASD o las flechas. Dispara con espacio.</p>
+    <canvas id="game" width="800" height="500"></canvas>
+  </main>
+
+  <script>
+    const canvas = document.querySelector("#game");
+    const ctx = canvas.getContext("2d");
+
+    const keys = new Set();
+    const player = { x: 400, y: 250, size: 24, speed: 3, hp: 5, dir: 0 };
+    const bullets = [];
+    const enemies = [];
+    let score = 0;
+    let gameOver = false;
+    let lastShot = 0;
+    let lastSpawn = 0;
+
+    addEventListener("keydown", (event) => {
+      keys.add(event.key.toLowerCase());
+      if (event.code === "Space") {
+        event.preventDefault();
+        keys.add("space");
+      }
+      if (gameOver && event.key.toLowerCase() === "r") restart();
+    });
+
+    addEventListener("keyup", (event) => {
+      keys.delete(event.key.toLowerCase());
+      if (event.code === "Space") keys.delete("space");
+    });
+
+    function restart() {
+      player.x = 400;
+      player.y = 250;
+      player.hp = 5;
+      bullets.length = 0;
+      enemies.length = 0;
+      score = 0;
+      gameOver = false;
+      requestAnimationFrame(loop);
+    }
+
+    function spawnEnemy() {
+      const side = Math.floor(Math.random() * 4);
+      const x = side === 0 ? 0 : side === 1 ? canvas.width : Math.random() * canvas.width;
+      const y = side === 2 ? 0 : side === 3 ? canvas.height : Math.random() * canvas.height;
+      enemies.push({ x, y, size: 22, speed: 0.7 + Math.random() * 0.5 });
+    }
+
+    function drawTank(x, y, color, angle, size) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(angle);
+      ctx.fillStyle = color;
+      ctx.fillRect(-size / 2, -size / 2, size, size);
+      ctx.fillStyle = "#222";
+      ctx.fillRect(0, -4, size * 0.8, 8);
+      ctx.restore();
+    }
+
+    function shoot(now) {
+      if (keys.has("space") && now - lastShot > 300) {
+        bullets.push({
+          x: player.x + Math.cos(player.dir) * 20,
+          y: player.y + Math.sin(player.dir) * 20,
+          vx: Math.cos(player.dir) * 6,
+          vy: Math.sin(player.dir) * 6,
+        });
+        lastShot = now;
+      }
+    }
+
+    function update(now) {
+      if (gameOver) return;
+
+      let dx = 0;
+      let dy = 0;
+      if (keys.has("arrowleft") || keys.has("a")) dx--;
+      if (keys.has("arrowright") || keys.has("d")) dx++;
+      if (keys.has("arrowup") || keys.has("w")) dy--;
+      if (keys.has("arrowdown") || keys.has("s")) dy++;
+
+      if (dx || dy) {
+        const length = Math.hypot(dx, dy);
+        dx /= length;
+        dy /= length;
+        player.x += dx * player.speed;
+        player.y += dy * player.speed;
+        player.dir = Math.atan2(dy, dx);
+      }
+
+      player.x = Math.max(16, Math.min(canvas.width - 16, player.x));
+      player.y = Math.max(16, Math.min(canvas.height - 16, player.y));
+
+      shoot(now);
+
+      if (now - lastSpawn > 1500) {
+        spawnEnemy();
+        lastSpawn = now;
+      }
+
+      for (const enemy of enemies) {
+        const angle = Math.atan2(player.y - enemy.y, player.x - enemy.x);
+        enemy.x += Math.cos(angle) * enemy.speed;
+        enemy.y += Math.sin(angle) * enemy.speed;
+
+        if (Math.hypot(player.x - enemy.x, player.y - enemy.y) < 28) {
+          player.hp--;
+          enemy.x = -100;
+          if (player.hp <= 0) gameOver = true;
+        }
+      }
+
+      for (const bullet of bullets) {
+        bullet.x += bullet.vx;
+        bullet.y += bullet.vy;
+      }
+
+      for (let i = enemies.length - 1; i >= 0; i--) {
+        for (let j = bullets.length - 1; j >= 0; j--) {
+          if (Math.hypot(enemies[i].x - bullets[j].x, enemies[i].y - bullets[j].y) < 20) {
+            enemies.splice(i, 1);
+            bullets.splice(j, 1);
+            score++;
+            break;
+          }
+        }
+      }
+
+      for (let i = bullets.length - 1; i >= 0; i--) {
+        const b = bullets[i];
+        if (b.x < 0 || b.x > canvas.width || b.y < 0 || b.y > canvas.height) {
+          bullets.splice(i, 1);
+        }
+      }
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = "#72805c";
+      for (let x = 20; x < canvas.width; x += 40) {
+        for (let y = 20; y < canvas.height; y += 40) {
+          ctx.fillRect(x, y, 2, 2);
+        }
+      }
+
+      for (const bullet of bullets) {
+        ctx.fillStyle = "#ffe28a";
+        ctx.beginPath();
+        ctx.arc(bullet.x, bullet.y, 4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      for (const enemy of enemies) {
+        drawTank(enemy.x, enemy.y, "#a64238", 0, enemy.size);
+      }
+
+      drawTank(player.x, player.y, "#4aa3df", player.dir, player.size);
+
+      ctx.fillStyle = "white";
+      ctx.font = "18px system-ui";
+      ctx.fillText(`Puntos: ${score}   Vida: ${player.hp}`, 16, 28);
+
+      if (gameOver) {
+        ctx.fillStyle = "rgba(0, 0, 0, 0.65)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "white";
+        ctx.textAlign = "center";
+        ctx.font = "36px system-ui";
+        ctx.fillText("Fin de la partida", canvas.width / 2, canvas.height / 2);
+        ctx.font = "18px system-ui";
+        ctx.fillText("Pulsa R para volver a jugar", canvas.width / 2, canvas.height / 2 + 36);
+        ctx.textAlign = "left";
+      }
+    }
+
+    function loop(now) {
+      update(now);
+      draw();
+      if (!gameOver) requestAnimationFrame(loop);
+    }
+
+    requestAnimationFrame(loop);
+  </script>
+</body>
+</html>
