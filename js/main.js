@@ -1,6 +1,5 @@
 /**
  * Battle of Kursk 1943 - Unified Main Controller
- * Connects SteppeTerrain, Tank entities, PhysicsEngine, BattleAudio, and kursk-units.json
  */
 
 const canvas = document.getElementById('battlefield');
@@ -29,15 +28,14 @@ let lastTime = 0;
 
 function resizeCanvas() {
   const rect = canvas.parentElement.getBoundingClientRect();
-  W = canvas.width = rect.width;
-  H = canvas.height = rect.height;
+  W = canvas.width = rect.width || window.innerWidth;
+  H = canvas.height = rect.height || window.innerHeight * 0.75;
   baseGroundY = H * 0.74;
   terrain.generate(W, baseGroundY);
 }
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
 
-// Load historical units from data/kursk-units.json with fallback
 async function initBattle() {
   try {
     const res = await fetch('data/kursk-units.json');
@@ -90,14 +88,14 @@ function updateHud() {
 
 function fireTank(who) {
   if (!t34 || !tiger) return;
-  BattleAudio.startEngines();
+  if (typeof BattleAudio !== 'undefined') BattleAudio.startEngines();
 
   const shooter = who === 't34' ? t34 : tiger;
   const shell = shooter.fire(Date.now());
   if (!shell) return;
 
   shells.push(shell);
-  BattleAudio.playCannonFire(shell.isHeavy);
+  if (typeof BattleAudio !== 'undefined') BattleAudio.playCannonFire(shell.isHeavy);
 
   camera.shake = shell.isHeavy ? 12 : 7;
   camera.targetZoom = 1.06;
@@ -116,11 +114,10 @@ function fireTank(who) {
 }
 
 canvas.addEventListener('pointerdown', () => {
-  BattleAudio.startEngines();
+  if (typeof BattleAudio !== 'undefined') BattleAudio.startEngines();
   camera.targetZoom = camera.targetZoom > 1.02 ? 1.0 : 1.15;
 });
 
-// Auto-combat AI for continuous cinematic clips
 setInterval(() => {
   if (t34 && tiger && t34.hp > 0 && tiger.hp > 0) {
     Math.random() > 0.45 ? fireTank('t34') : fireTank('tiger');
@@ -128,7 +125,6 @@ setInterval(() => {
 }, 2700);
 
 function gameLoop(timestamp) {
-  const dt = timestamp - lastTime;
   lastTime = timestamp;
 
   ctx.save();
@@ -143,11 +139,9 @@ function gameLoop(timestamp) {
     camera.shake *= 0.85;
   }
 
-  // 1. Draw Procedural Prokhorovka Steppe
   terrain.draw(ctx, W, H, baseGroundY, timestamp);
 
   if (t34 && tiger) {
-    // 2. Move & Aim Tanks following terrain elevation
     const t34Ground = terrain.getHeightAt(t34.x, baseGroundY);
     const tigerGround = terrain.getHeightAt(tiger.x, baseGroundY);
 
@@ -174,7 +168,6 @@ function gameLoop(timestamp) {
     t34.draw(ctx);
     tiger.draw(ctx);
 
-    // 3. Ballistics & Armor Penetration
     const battleState = { t34, tiger, groundY: baseGroundY, width: W };
     PhysicsEngine.updateShells(
       ctx, battleState, shells, particles, shockwaves, terrain.craters, floatingTexts,
@@ -183,17 +176,16 @@ function gameLoop(timestamp) {
           camera.shake = penetrated ? 16 : 8;
           camera.targetZoom = penetrated ? 1.1 : 1.04;
           setTimeout(() => { camera.targetZoom = 1.0; }, 400);
-          BattleAudio.playExplosion(penetrated);
+          if (typeof BattleAudio !== 'undefined') BattleAudio.playExplosion(penetrated);
           updateHud();
         },
         onRicochet: () => {
           camera.shake = 5;
-          BattleAudio.playRicochet();
+          if (typeof BattleAudio !== 'undefined') BattleAudio.playRicochet();
         }
       }
     );
 
-    // Burning wreck smoke
     [t34, tiger].forEach(unit => {
       if (unit.hp <= 0 && Math.random() < 0.35) {
         PhysicsEngine.spawnParticles(particles, unit.x, unit.y - 22, 1, {
@@ -204,14 +196,12 @@ function gameLoop(timestamp) {
     });
   }
 
-  // 4. Particles, Shockwaves & Floating Combat Text
   PhysicsEngine.updateEffects(ctx, particles, shockwaves, floatingTexts);
 
   ctx.restore();
   requestAnimationFrame(gameLoop);
 }
 
-// --- Video Recorder (MP4 / WebM) ---
 let mediaRecorder = null;
 let recordedChunks = [];
 let isRecording = false;
