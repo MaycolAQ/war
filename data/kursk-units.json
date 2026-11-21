@@ -1,1 +1,147 @@
-
+{
+  "battle": "Battle of Kursk (Operation Citadel)",
+  "date": "July 5 – August 23, 1943",
+  "sector": "Prokhorovka, USSR",
+  "units": [
+    {
+      "id": "t34_76",
+      "name": "T-34/76 Model 1943",
+      "faction": "USSR",
+      "role": "Medium Tank",
+      "historical": {
+        "weightTons": 30.9,
+        "crew": 4,
+        "mainGun": "76.2 mm F-34 tank gun",
+        "frontalArmorMm": 45,
+        "armorSlopeDeg": 60,
+        "maxSpeedKmh": 53,
+        "engine": "500 hp Kharkiv V-2-34 V12 Diesel",
+        "notes": "Backbone of the Soviet armored forces at Prokhorovka; relied on speed, numbers, and 60° sloped armor to close distance against German heavy tanks."
+      },
+      "engineStats": {
+        "maxHp": 100,
+        "speed": 0.48,
+        "armorMm": 45,
+        "armorSlope": 60,
+        "penetration": 92,
+        "baseDamage": 28,
+        "reloadTime": 2200,
+        "barrelLength": 44,
+        "hullColor": "#3f6212",
+        "turretColor": "#4d7c0f"
+      }
+    },
+    {
+      "id": "kv1_s",
+      "name": "KV-1S Heavy Tank",
+      "faction": "USSR",
+      "role": "Heavy Breakthrough Tank",
+      "historical": {
+        "weightTons": 42.5,
+        "crew": 5,
+        "mainGun": "76.2 mm ZiS-5 tank gun",
+        "frontalArmorMm": 75,
+        "armorSlopeDeg": 30,
+        "maxSpeedKmh": 43,
+        "engine": "600 hp V-2K V12 Diesel",
+        "notes": "Lighter, faster variant of the Kliment Voroshilov heavy tank with improved turret ergonomics and thick all-around armor."
+      },
+      "engineStats": {
+        "maxHp": 135,
+        "speed": 0.34,
+        "armorMm": 75,
+        "armorSlope": 30,
+        "penetration": 95,
+        "baseDamage": 30,
+        "reloadTime": 2500,
+        "barrelLength": 46,
+        "hullColor": "#365314",
+        "turretColor": "#3f6212"
+      }
+    },
+    {
+      "id": "tiger_1",
+      "name": "Pz.Kpfw. VI Tiger Ausf. E",
+      "faction": "GER",
+      "role": "Heavy Tank",
+      "historical": {
+        "weightTons": 57.0,
+        "crew": 5,
+        "mainGun": "8.8 cm KwK 36 L/56",
+        "frontalArmorMm": 100,
+        "armorSlopeDeg": 10,
+        "maxSpeedKmh": 38,
+        "engine": "700 hp Maybach HL230 P45 V12 Petrol",
+        "notes": "Feared German heavy tank capable of destroying Soviet armor at over 1,500 meters, though vulnerable to close-range flanking at Prokhorovka."
+      },
+      "engineStats": {
+        "maxHp": 150,
+        "speed": 0.22,
+        "armorMm": 100,
+        "armorSlope": 10,
+        "penetration": 145,
+        "baseDamage": 48,
+        "reloadTime": 3100,
+        "barrelLength": 56,
+        "hullColor": "#475569",
+        "turretColor": "#64748b"
+      }
+    },
+    {
+      "id": "panther_d",
+      "name": "Pz.Kpfw. V Panther Ausf. D",
+      "faction": "GER",
+      "role": "Medium Tank",
+      "historical": {
+        "weightTons": 44.8,
+        "crew": 5,
+        "mainGun": "7.5 cm KwK 42 L/70",
+        "frontalArmorMm": 80,
+        "armorSlopeDeg": 55,
+        "maxSpeedKmh": 46,
+        "engine": "700 hp Maybach HL230 P30 V12 Petrol",
+        "notes": "Made its combat debut at Kursk; combined heavily sloped frontal armor with a high-velocity 75mm gun, though plagued by early mechanical teething issues."
+      },
+      "engineStats": {
+        "maxHp": 125,
+        "speed": 0.36,
+        "armorMm": 80,
+        "armorSlope": 55,
+        "penetration": 155,
+        "baseDamage": 40,
+        "reloadTime": 2700,
+        "barrelLength": 60,
+        "hullColor": "#78716c",
+        "turretColor": "#a8a29e"
+      }
+    },
+    {
+      "id": "ferdinand",
+      "name": "Panzerjäger Tiger (P) Ferdinand",
+      "faction": "GER",
+      "role": "Heavy Tank Destroyer",
+      "historical": {
+        "weightTons": 65.0,
+        "crew": 6,
+        "mainGun": "8.8 cm PaK 43/2 L/71",
+        "frontalArmorMm": 200,
+        "armorSlopeDeg": 15,
+        "maxSpeedKmh": 30,
+        "engine": "2x 300 hp Maybach HL120 TRM (Petrol-Electric)",
+        "notes": "Virtually impervious from the front with 200mm of bolted armor and a lethal long-barreled 88mm gun, but lacked a hull machine gun and suffered severe mobility limits."
+      },
+      "engineStats": {
+        "maxHp": 175,
+        "speed": 0.16,
+        "armorMm": 200,
+        "armorSlope": 15,
+        "penetration": 185,
+        "baseDamage": 56,
+        "reloadTime": 3500,
+        "barrelLength": 66,
+        "hullColor": "#57534e",
+        "turretColor": "#78716c"
+      }
+    }
+  ]
+}
