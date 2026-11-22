@@ -2,56 +2,108 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <meta name="theme-color" content="#3f5c3f" />
-  <title>Battle of Kursk 1943 - Armored Simulation</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#101611" />
+  <meta name="description" content="Dirige tu escuadrón blindado en una campaña táctica ambientada en Kursk, 1943." />
+  <title>KURSK 1943 — Campaña blindada</title>
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
+  <main id="campaign-screen" class="campaign-screen">
+    <header class="command-header">
+      <a class="brand" href="#campaign" aria-label="Kursk 1943, campaña">
+        <span class="brand-mark">K</span><span><strong>KURSK</strong><small>OPERACIONES BLINDADAS · 1943</small></span>
+      </a>
+      <div class="campaign-status"><span class="live-dot"></span> CAMPAÑA ACTIVA <span class="status-divider">/</span> <span id="campaign-date">12 JUL · 05:40</span></div>
+      <button id="reset-campaign" class="text-button" type="button" title="Reiniciar el progreso de campaña">REINICIAR CAMPAÑA</button>
+    </header>
 
-  <header>
-    <div class="header-title"><strong>KURSK 1943</strong><span>· Prokhorovka</span></div>
-    <span id="turn-indicator" class="turn-badge">TURNO: T-34</span>
-  </header>
+    <section class="command-layout" aria-label="Centro de mando de campaña">
+      <aside class="briefing-panel panel">
+        <div class="eyebrow"><span class="eyebrow-line"></span> FRENTE ORIENTAL · SECTOR SUR</div>
+        <h1>La batalla<br>por <em>Kursk</em></h1>
+        <p class="briefing-copy">El frente se quiebra. Toma el mando de una unidad blindada y abre paso a través de las líneas enemigas.</p>
 
-  <div id="canvas-container">
-    <canvas id="battlefield"></canvas>
-    <div id="hud">
-      <div class="stat-box">
-        <div class="stat-name">USSR · T-34/76</div>
-        <div class="hp-bar"><div id="hp-t34" class="hp-fill" style="width:100%; background:#ef4444;"></div></div>
-      </div>
-      <div class="stat-box" style="text-align:right;">
-        <div class="stat-name">GER · Tiger I</div>
-        <div class="hp-bar"><div id="hp-tiger" class="hp-fill" style="width:100%; background:#94a3b8;"></div></div>
-      </div>
+        <div class="commander-card">
+          <div class="commander-avatar">✦</div>
+          <div><span class="micro-label">COMANDANTE</span><strong>Comandante de campo</strong><small>1.er Ejército de Tanques · URSS</small></div>
+          <span class="rank-mark">★</span>
+        </div>
+
+        <div class="panel-rule"></div>
+        <div class="section-heading"><span>FUERZA DISPONIBLE</span><span class="muted">01 UNIDAD</span></div>
+        <div class="tank-card">
+          <div class="tank-art" aria-hidden="true"><span>◢</span><span class="tank-barrel"></span></div>
+          <div class="tank-info"><div class="tank-title">T-34/76 <span class="ready-tag">LISTO</span></div><div class="tank-subtitle">CARRO MEDIO · MODELO 1942</div><div class="tank-stats"><span><b>76</b> MM</span><span><b>53</b> KM/H</span><span><b>80</b> BLINDAJE</span></div></div>
+        </div>
+        <div class="crew-note"><span class="crew-icon">◎</span><span>Tripulación veterana <b>·</b> Moral alta</span><span class="morale-dots"><i></i><i></i><i></i><i></i><i></i></span></div>
+
+        <div class="panel-rule objectives-rule"></div>
+        <div class="section-heading"><span>OBJETIVO DE CAMPAÑA</span><span class="objective-icon">⌖</span></div>
+        <p class="objective-copy">Asegurar la ruta hacia Prokhorovka y neutralizar la resistencia acorazada alemana.</p>
+        <div class="campaign-progress"><div class="progress-label"><span>PROGRESO</span><b id="progress-label">0 / 3 MISIONES</b></div><div class="progress-track"><span id="progress-fill"></span></div></div>
+      </aside>
+
+      <section class="map-panel panel" aria-label="Mapa estratégico de misiones">
+        <div class="map-topline"><div><div class="eyebrow">MAPA DE OPERACIONES <span class="map-coordinates">· 51°02′N 36°40′E</span></div><h2>Arco defensivo de Kursk</h2></div><div class="map-tools"><span class="map-scale">ESCALA 1:250 000</span><span class="north-mark">N <b>↑</b></span></div></div>
+        <div class="map-viewport">
+          <div class="map-grid" aria-hidden="true"></div>
+          <svg class="strategy-map" viewBox="0 0 900 600" role="img" aria-label="Mapa táctico con tres objetivos de misión">
+            <defs>
+              <pattern id="field-lines" width="42" height="42" patternUnits="userSpaceOnUse" patternTransform="rotate(-24)"><path d="M0 0V42" stroke="#c2b891" stroke-opacity=".08" stroke-width="1"/></pattern>
+              <pattern id="hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M0 0V8" stroke="#c7a86a" stroke-opacity=".25" stroke-width="2"/></pattern>
+              <linearGradient id="river" x1="0" x2="1"><stop stop-color="#71817a" stop-opacity=".35"/><stop offset=".5" stop-color="#9ba58c" stop-opacity=".28"/><stop offset="1" stop-color="#71817a" stop-opacity=".35"/></linearGradient>
+            </defs>
+            <rect width="900" height="600" fill="url(#field-lines)"/>
+            <path d="M-30 435C120 390 155 450 280 407S455 385 535 320s180-37 240-113 92-66 160-80" fill="none" stroke="url(#river)" stroke-width="28"/>
+            <path d="M-30 435C120 390 155 450 280 407S455 385 535 320s180-37 240-113 92-66 160-80" fill="none" stroke="#b6c0a3" stroke-opacity=".32" stroke-width="2" stroke-dasharray="3 8"/>
+            <path d="M64 510C190 442 252 462 339 365S502 288 572 231 700 214 820 89" fill="none" stroke="#d7c89f" stroke-opacity=".35" stroke-width="3" stroke-dasharray="10 8"/>
+            <path d="M50 220C180 280 245 207 325 255S472 188 550 212 710 163 855 183" fill="none" stroke="#b3a17b" stroke-opacity=".25" stroke-width="2" stroke-dasharray="5 8"/>
+            <path d="M476 60L551 78 599 130 582 180 620 228 575 268 535 253 500 214 452 205 424 156 443 108Z" fill="url(#hatch)" stroke="#b69b63" stroke-opacity=".35" stroke-width="2"/>
+            <path d="M116 88l11 8-7 12-14-2-2-11zM173 132l15 5-2 12-13 3-9-10zM286 96l12 8-8 12-15-6zM714 338l15 2 4 12-13 7-10-9zM760 423l17 4-5 12-15 0-5-8zM341 492l14 7-4 12-17-2-3-9z" fill="#61715c" fill-opacity=".32"/>
+            <g fill="#d5c7a3" fill-opacity=".42" font-family="Arial,sans-serif" font-size="11" letter-spacing="2"><text x="104" y="180">KOROCHA</text><text x="663" y="448">PROKHOROVKA</text><text x="420" y="344">PSEL</text><text x="722" y="110">OBoyan</text></g>
+            <g stroke="#e8dcc0" stroke-opacity=".15" stroke-width="1"><path d="M40 315h820M450 35v530" stroke-dasharray="2 7"/></g>
+            <g class="map-route"><path d="M172 460Q265 419 354 350T570 232" fill="none" stroke="#d5ad63" stroke-width="2" stroke-dasharray="4 7"/><circle cx="172" cy="460" r="3" fill="#d5ad63"/><circle cx="354" cy="350" r="3" fill="#d5ad63"/><circle cx="570" cy="232" r="3" fill="#d5ad63"/></g>
+          </svg>
+          <button class="mission-node mission-one is-selected" data-mission="1" type="button" aria-label="Misión 1, Puesto avanzado, disponible"><span class="node-ring"><span>01</span></span><span class="node-caption"><b>EL PUESTO AVANZADO</b><small>OBJETIVO DISPONIBLE</small></span></button>
+          <button class="mission-node mission-two is-locked" data-mission="2" type="button" aria-label="Misión 2, Cruce del río, bloqueada"><span class="node-ring"><span>Ⅱ</span></span><span class="node-caption"><b>CRUCE DEL PSEL</b><small>SECTOR BLOQUEADO</small></span></button>
+          <button class="mission-node mission-three is-locked" data-mission="3" type="button" aria-label="Misión 3, Camino a Prokhorovka, bloqueada"><span class="node-ring"><span>Ⅲ</span></span><span class="node-caption"><b>CAMINO A PROKHOROVKA</b><small>SECTOR BLOQUEADO</small></span></button>
+          <div class="map-stamp"><span>FRENTE<br>VORONEZH</span><b>✦</b><small>URSS · 1943</small></div>
+          <div class="map-legend"><span><i class="legend-dot available"></i> DISPONIBLE</span><span><i class="legend-dot locked"></i> BLOQUEADO</span><span><i class="legend-line"></i> RUTA DE AVANCE</span></div>
+          <div class="map-coord coord-a">51° 02′ N</div><div class="map-coord coord-b">36° 40′ E</div>
+        </div>
+        <div class="map-footer"><span><i class="live-dot"></i> INTELIGENCIA ACTUALIZADA</span><span>FUENTE: RECONOCIMIENTO AÉREO · 05:12</span></div>
+      </section>
+
+      <aside class="mission-panel panel" aria-live="polite">
+        <div class="mission-panel-top"><span class="eyebrow">ORDEN DE OPERACIONES</span><span id="mission-number" class="mission-number">01 / 03</span></div>
+        <div class="mission-class"><span id="mission-type-icon">⌖</span><span id="mission-type">RECONOCIMIENTO ARMADO</span></div>
+        <h2 id="mission-title">El puesto<br>avanzado</h2>
+        <p id="mission-description" class="mission-description">Una patrulla alemana bloquea la carretera de abastecimiento. Despeja la zona para asegurar el avance del batallón.</p>
+        <div class="mission-meta"><div><span class="micro-label">DIFICULTAD</span><strong id="mission-difficulty" class="difficulty"><i></i><i></i><i></i></strong></div><div><span class="micro-label">DURACIÓN</span><strong id="mission-duration">5–8 MIN</strong></div></div>
+        <div class="mission-objective"><span class="objective-marker">01</span><div><span class="micro-label">OBJETIVO PRINCIPAL</span><strong id="mission-objective">Destruye al Tiger I enemigo</strong></div></div>
+        <div class="reward-row"><span class="micro-label">RECOMPENSA</span><span class="reward-value"><b>✦</b> <span id="mission-reward">150</span> PUNTOS DE MANDO</span></div>
+        <div class="mission-actions"><button id="launch-mission" class="launch-button" type="button"><span>INICIAR MISIÓN</span><b>→</b></button><span class="launch-hint">EL PROGRESO SE GUARDA AUTOMÁTICAMENTE</span></div>
+      </aside>
+    </section>
+    <footer class="command-footer"><span>◆ 1.er EJÉRCITO DE TANQUES</span><span>OPERACIÓN CIUDADELA <i>·</i> JULIO 1943</span><span>BUILD 1.0 <i>·</i> KURSK COMMAND</span></footer>
+  </main>
+
+  <main id="battle-screen" class="battle-screen is-hidden">
+    <header class="battle-header"><button id="back-to-campaign" class="back-button" type="button">← <span>MAPA DE CAMPAÑA</span></button><div class="battle-title"><strong>KURSK 1943</strong><span>· <b id="battle-mission-name">EL PUESTO AVANZADO</b></span></div><span id="turn-indicator" class="turn-badge">TURNO: T-34</span></header>
+    <div id="canvas-container"><canvas id="battlefield"></canvas>
+      <div id="hud"><div class="stat-box"><div class="stat-name">USSR · T-34/76</div><div class="hp-bar"><div id="hp-t34" class="hp-fill hp-soviet" style="width:100%"></div></div></div><div class="stat-box enemy-stat"><div class="stat-name">GER · Tiger I</div><div class="hp-bar"><div id="hp-tiger" class="hp-fill hp-german" style="width:100%"></div></div></div></div>
+      <div id="tutorial" class="overlay"><div class="overlay-card"><span class="overlay-kicker">MANUAL DE CAMPO</span><h2>ÓRDENES DE COMBATE</h2><ul class="tutorial-list"><li><b>01</b> Selecciona tu tanque para ver sus movimientos.</li><li><b>02</b> Toca una casilla azul para maniobrar.</li><li><b>03</b> Ataca al enemigo cuando esté a alcance.</li><li><b>04</b> Destruye el Tiger I para completar el objetivo.</li></ul><button class="primary-small" type="button" onclick="cerrarTutorial()">ENTENDIDO · A COMBATIR</button></div></div>
+      <div id="fin-partida" class="overlay oculto"><div class="overlay-card"><span class="overlay-kicker">INFORME DE COMBATE</span><h2 id="titulo-fin">¡VICTORIA!</h2><p id="subtitulo-fin">El enemigo ha sido destruido</p><div class="result-actions"><button id="btn-reiniciar" class="primary-small" type="button" onclick="resetBattle()">REINTENTAR</button><button id="battle-result-back" class="secondary-small" type="button">VOLVER AL MAPA</button></div></div></div>
     </div>
-    <div id="fin-partida" class="overlay oculto">
-    <div id="tutorial" class="overlay">
-  <h2>⚔️ CÓMO JUGAR</h2>
-  <ul class="tutorial-list">
-    <li>🟨 <strong>Toca tu tanque</strong> para seleccionarlo</li>
-    <li>🟦 <strong>Toca una casilla azul</strong> para moverte</li>
-    <li>🟥 <strong>Toca un enemigo rojo</strong> para atacar</li>
-    <li>⏭ <strong>Pasar turno</strong> si no puedes actuar</li>
-    <li>🏆 <strong>Destruye al Tiger</strong> para ganar</li>
-  </ul>
-  <button id="btn-tutorial-ok" class="btn-pass" onclick="cerrarTutorial()">▶ EMPEZAR</button>
-</div>
-      <h2 id="titulo-fin">¡VICTORIA!</h2>
-      <p id="subtitulo-fin">El enemigo ha sido destruido</p>
-      <button id="btn-reiniciar" class="btn-pass" onclick="resetBattle()">😘 JUGAR DE NUEVO</button>
-    </div>
-  </div>
+    <div id="controls"><button id="btn-pass" class="control-button" type="button" onclick="passTurn()">PASAR TURNO <span>↗</span></button><button class="control-button reset-control" type="button" onclick="resetBattle()">REINICIAR BATALLA <span>⟲</span></button><button id="btn-music" class="control-button music-control" type="button" onclick="toggleMusic()">MÚSICA · OFF <span>♫</span></button></div>
+  </main>
 
-  <div id="controls">
-  <button id="btn-pass"  class="btn-icon btn-pass"  onclick="passTurn()"    title="Pasar turno">🕹️ PASAR TURNO</button>
-  <button                class="btn-icon btn-reset" onclick="resetBattle()" title="Reiniciar">🚀 NUEVA PARTIDA</button>
-  <button id="btn-music" class="btn-icon btn-music" onclick="toggleMusic()" title="Música">🥱 OFF</button>
-</div>
-
-<script src="js/audio.js"></script>
-<script src="entities/board.js"></script>
-<script src="entities/units.js"></script>
-<script src="js/engine.js"></script>
-<script src="js/main.js"></script> 
+  <script src="js/audio.js"></script>
+  <script src="entities/board.js"></script>
+  <script src="entities/units.js"></script>
+  <script src="js/engine.js"></script>
+  <script src="js/main.js"></script>
+  <script src="js/campaign.js"></script>
+</body>
+</html>
