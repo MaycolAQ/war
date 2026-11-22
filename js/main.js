@@ -1,5 +1,6 @@
 /**
  * Battle of Kursk 1943 - Unified Main Controller
+ * Con sistema de turnos tipo ajedrez, música procedural y efectos cinematográficos.
  */
 
 const canvas = document.getElementById('battlefield');
@@ -28,6 +29,7 @@ let lastTime = 0;
 
 // ===== SISTEMA DE TURNOS (ajedrez) =====
 let turnoActual = 't34'; // 't34' o 'tiger'
+let estadoPartida = 'jugando'; // 'jugando' | 'fin'
 
 function actualizarIndicadorTurno() {
   const el = document.getElementById('turn-indicator');
@@ -38,15 +40,52 @@ function actualizarIndicadorTurno() {
   }
   const btnT34   = document.getElementById('btn-fire-t34');
   const btnTiger = document.getElementById('btn-fire-tiger');
-  if (btnT34)   btnT34.disabled   = (turnoActual !== 't34');
-  if (btnTiger) btnTiger.disabled = (turnoActual !== 'tiger');
+  if (btnT34)   btnT34.disabled   = (turnoActual !== 't34'   || estadoPartida === 'fin');
+  if (btnTiger) btnTiger.disabled = (turnoActual !== 'tiger' || estadoPartida === 'fin');
 }
 
 function passTurn() {
+  if (estadoPartida === 'fin') return;
   turnoActual = turnoActual === 't34' ? 'tiger' : 't34';
+  actualizarIndicadorTurno();
+
+  // 🎵 Cambiar marcha según el bando activo
+  if (typeof BattleMusic !== 'undefined' && BattleMusic.isPlaying) {
+    BattleMusic.start(turnoActual === 't34' ? 'katyusha' : 'erika');
+  }
+}
+
+function finPartida() {
+  if (estadoPartida === 'fin') return;
+  estadoPartida = 'fin';
+
+  let ganador = null;
+  if (t34 && t34.hp <= 0)   ganador = 'tiger';
+  if (tiger && tiger.hp <= 0) ganador = 't34';
+
+  const overlay = document.getElementById('fin-partida');
+  const titulo  = document.getElementById('titulo-fin');
+  const sub     = document.getElementById('subtitulo-fin');
+  if (!overlay) return;
+
+  if (ganador === 't34') {
+    titulo.textContent = '¡VICTORIA SOVIÉTICA!';
+    titulo.className = 'victoria-ussr';
+    sub.textContent = 'El Tiger ha sido destruido';
+  } else if (ganador === 'tiger') {
+    titulo.textContent = '¡VICTORIA ALEMANA!';
+    titulo.className = 'victoria-ger';
+    sub.textContent = 'El T-34 ha sido destruido';
+  } else {
+    titulo.textContent = 'EMPATE';
+    titulo.className = '';
+    sub.textContent = 'Ambos tanques han caído';
+  }
+  overlay.classList.remove('oculto');
   actualizarIndicadorTurno();
 }
 
+// ===== CANVAS =====
 function resizeCanvas() {
   const rect = canvas.parentElement.getBoundingClientRect();
   W = canvas.width = rect.width || window.innerWidth;
@@ -57,6 +96,7 @@ function resizeCanvas() {
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
 
+// ===== INICIALIZACIÓN =====
 async function initBattle() {
   try {
     const res = await fetch('data/kursk-units.json');
@@ -74,6 +114,12 @@ function getUnitConfig(id, fallback) {
 }
 
 function resetBattle() {
+  // 🔄 Reinicio limpio
+  estadoPartida = 'jugando';
+  turnoActual = 't34';
+  const overlay = document.getElementById('fin-partida');
+  if (overlay) overlay.classList.add('oculto');
+
   const ussrCfg = getUnitConfig('t34_76', {
     name: 'T-34/76', faction: 'USSR', maxHp: 100, speed: 0.48,
     armorMm: 45, armorSlope: 60, penetration: 92, baseDamage: 28,
@@ -96,7 +142,9 @@ function resetBattle() {
   terrain.generate(W, baseGroundY);
   camera.targetZoom = 1;
   camera.shake = 0;
+
   updateHud();
+  actualizarIndicadorTurno();
 }
 
 function updateHud() {
@@ -107,9 +155,12 @@ function updateHud() {
   if (tigerBar) tigerBar.style.width = Math.max(0, (tiger.hp / tiger.maxHp) * 100) + '%';
 }
 
+// ===== DISPARO =====
 function fireTank(who) {
   if (!t34 || !tiger) return;
+  if (estadoPartida === 'fin') return;
   if (who !== turnoActual) return; // ❌ No es tu turno
+
   if (typeof BattleAudio !== 'undefined') BattleAudio.startEngines();
 
   const shooter = who === 't34' ? t34 : tiger;
@@ -117,13 +168,17 @@ function fireTank(who) {
   if (!shell) return;
 
   shells.push(shell);
+
+  // 💥 Fogonazo en la boca del cañón
+  PhysicsEngine.createMuzzleFlash(particles, shell.x, shell.y, shell.vx > 0 ? 1 : -1);
+
   if (typeof BattleAudio !== 'undefined') BattleAudio.playCannonFire(shell.isHeavy);
 
   camera.shake = shell.isHeavy ? 12 : 7;
   camera.targetZoom = 1.06;
   setTimeout(() => { camera.targetZoom = 1.0; }, 350);
 
-    PhysicsEngine.spawnParticles(particles, shell.x, shell.y, 18, {
+  PhysicsEngine.spawnParticles(particles, shell.x, shell.y, 18, {
     colors: ['#fef08a', '#fb923c', '#94a3b8'],
     speedMin: 1.5,
     speedMax: 6,
@@ -138,12 +193,32 @@ function fireTank(who) {
   setTimeout(() => passTurn(), 900);
 }
 
+// ===== INTERACCIÓN TÁCTIL =====
 canvas.addEventListener('pointerdown', () => {
   if (typeof BattleAudio !== 'undefined') BattleAudio.startEngines();
   camera.targetZoom = camera.targetZoom > 1.02 ? 1.0 : 1.15;
+
+  // 🎵 Arrancar música procedural la primera vez
+  const btn = document.getElementById('btn-music');
+  if (typeof BattleMusic !== 'undefined' && btn && !BattleMusic.isPlaying) {
+    const song = turnoActual === 't34' ? 'katyusha' : 'erika';
+    BattleMusic.start(song);
+    btn.textContent = '🎵 MÚSICA: ON';
+    btn.classList.add('playing');
+  }
 });
 
+// ===== MÚSICA =====
+function toggleMusic() {
+  const btn = document.getElementById('btn-music');
+  if (!btn || typeof BattleMusic === 'undefined') return;
+  const song = turnoActual === 't34' ? 'katyusha' : 'erika';
+  const playing = BattleMusic.toggle(song);
+  btn.textContent = playing ? '🎵 MÚSICA: ON' : '🎵 MÚSICA: OFF';
+  btn.classList.toggle('playing', playing);
+}
 
+// ===== BUCLE PRINCIPAL =====
 function gameLoop(timestamp) {
   lastTime = timestamp;
 
@@ -166,9 +241,8 @@ function gameLoop(timestamp) {
     const tigerGround = terrain.getHeightAt(tiger.x, baseGroundY);
 
     // 🚫 Sin auto-movimiento: los tanques se quedan donde están.
-// El jugador los moverá con taps en el siguiente paso.
-const t34Moving = false;
-const tigerMoving = false;
+    const t34Moving = false;
+    const tigerMoving = false;
 
     if (t34Moving && Math.random() < 0.25) {
       PhysicsEngine.spawnParticles(particles, t34.x - 32, t34Ground - 2, 1, {
@@ -190,6 +264,24 @@ const tigerMoving = false;
     t34.draw(ctx);
     tiger.draw(ctx);
 
+    // 🎯 Anillo dorado del tanque activo
+    if (estadoPartida === 'jugando') {
+      const activo = turnoActual === 't34' ? t34 : tiger;
+      if (activo && activo.hp > 0) {
+        ctx.save();
+        ctx.strokeStyle = '#c9a227';
+        ctx.lineWidth = 3;
+        ctx.setLineDash([8, 5]);
+        ctx.lineDashOffset = -performance.now() * 0.02;
+        ctx.shadowColor = '#c9a227';
+        ctx.shadowBlur = 12;
+        ctx.beginPath();
+        ctx.arc(activo.x, activo.y - 22, 58, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
     const battleState = { t34, tiger, groundY: baseGroundY, width: W };
     PhysicsEngine.updateShells(
       ctx, battleState, shells, particles, shockwaves, terrain.craters, floatingTexts,
@@ -208,22 +300,54 @@ const tigerMoving = false;
       }
     );
 
+    // 🏁 Detectar tanque destruido → wreck una sola vez
+    if (t34.hp <= 0 && !t34._wrecked) {
+      t34._wrecked = true;
+      PhysicsEngine.createWreck(particles, shockwaves, t34.x, t34.y - 20);
+      camera.shake = 22;
+    }
+    if (tiger.hp <= 0 && !tiger._wrecked) {
+      tiger._wrecked = true;
+      PhysicsEngine.createWreck(particles, shockwaves, tiger.x, tiger.y - 20);
+      camera.shake = 22;
+    }
+
+    // 🔥 Humo continuo de los wrecks (columna persistente)
     [t34, tiger].forEach(unit => {
-      if (unit.hp <= 0 && Math.random() < 0.35) {
-        PhysicsEngine.spawnParticles(particles, unit.x, unit.y - 22, 1, {
-          colors: ['#1e293b', '#475569', '#ea580c'],
-          speedMin: 0.4, speedMax: 1.5, sizeMin: 5, sizeMax: 11, decay: 0.015, buoyancy: -0.05
-        });
+      if (unit.hp <= 0 && Math.random() < 0.15) {
+        PhysicsEngine.spawnParticles(particles,
+          unit.x + (Math.random() - 0.5) * 20,
+          unit.y - 22, 1,
+          {
+            colors: ['#1e293b', '#334155', '#0f172a'],
+            speedMin: 0.3, speedMax: 1.2,
+            sizeMin: 6, sizeMax: 12,
+            decay: 0.012,
+            buoyancy: -0.05
+          });
       }
     });
+
+    // 🏁 Fin de partida
+    if ((t34.hp <= 0 || tiger.hp <= 0) && estadoPartida === 'jugando') {
+      setTimeout(finPartida, 900);
+    }
   }
 
   PhysicsEngine.updateEffects(ctx, particles, shockwaves, floatingTexts);
+
+  // 🎬 Vignette cinematográfico
+  const vg = ctx.createRadialGradient(W/2, H/2, Math.min(W,H)*0.3, W/2, H/2, Math.max(W,H)*0.75);
+  vg.addColorStop(0, 'rgba(0,0,0,0)');
+  vg.addColorStop(1, 'rgba(0,0,0,0.55)');
+  ctx.fillStyle = vg;
+  ctx.fillRect(-W, -H, W*3, H*3);
 
   ctx.restore();
   requestAnimationFrame(gameLoop);
 }
 
+// ===== GRABACIÓN DE VIDEO =====
 let mediaRecorder = null;
 let recordedChunks = [];
 let isRecording = false;
@@ -270,36 +394,8 @@ function toggleRecording() {
   }
 }
 
+// ===== ARRANQUE =====
 initBattle().then(() => {
   actualizarIndicadorTurno();
   requestAnimationFrame(gameLoop);
 });
-.turn-badge {
-  padding: 6px 12px;
-  border-radius: 8px;
-  font-weight: bold;
-  font-size: 0.85rem;
-  letter-spacing: 1px;
-  border: 2px solid #c9a227;
-  background: #1a1a1a;
-  color: #f0e6c8;
-  transition: all 0.25s ease;
-}
-.turn-badge.turno-ussr { border-color: #ef4444; color: #fca5a5; }
-.turn-badge.turno-ger  { border-color: #94a3b8; color: #cbd5e1; }
-
-.btn-pass {
-  background: #c9a227;
-  color: #1a1a1a;
-  font-weight: bold;
-  border: 2px solid #f0e6c8;
-  padding: 10px 16px;
-  border-radius: 8px;
-}
-.btn-pass:active { transform: scale(0.96); }
-
-#controls button:disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
-  filter: grayscale(0.7);
-}
