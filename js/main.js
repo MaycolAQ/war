@@ -26,6 +26,27 @@ let shockwaves = [];
 let floatingTexts = [];
 let lastTime = 0;
 
+// ===== SISTEMA DE TURNOS (ajedrez) =====
+let turnoActual = 't34'; // 't34' o 'tiger'
+
+function actualizarIndicadorTurno() {
+  const el = document.getElementById('turn-indicator');
+  if (el) {
+    el.textContent = turnoActual === 't34' ? 'TURNO: T-34' : 'TURNO: TIGER';
+    el.classList.toggle('turno-ussr', turnoActual === 't34');
+    el.classList.toggle('turno-ger',  turnoActual === 'tiger');
+  }
+  const btnT34   = document.getElementById('btn-fire-t34');
+  const btnTiger = document.getElementById('btn-fire-tiger');
+  if (btnT34)   btnT34.disabled   = (turnoActual !== 't34');
+  if (btnTiger) btnTiger.disabled = (turnoActual !== 'tiger');
+}
+
+function passTurn() {
+  turnoActual = turnoActual === 't34' ? 'tiger' : 't34';
+  actualizarIndicadorTurno();
+}
+
 function resizeCanvas() {
   const rect = canvas.parentElement.getBoundingClientRect();
   W = canvas.width = rect.width || window.innerWidth;
@@ -88,6 +109,7 @@ function updateHud() {
 
 function fireTank(who) {
   if (!t34 || !tiger) return;
+  if (who !== turnoActual) return; // ❌ No es tu turno
   if (typeof BattleAudio !== 'undefined') BattleAudio.startEngines();
 
   const shooter = who === 't34' ? t34 : tiger;
@@ -101,7 +123,7 @@ function fireTank(who) {
   camera.targetZoom = 1.06;
   setTimeout(() => { camera.targetZoom = 1.0; }, 350);
 
-  PhysicsEngine.spawnParticles(particles, shell.x, shell.y, 18, {
+    PhysicsEngine.spawnParticles(particles, shell.x, shell.y, 18, {
     colors: ['#fef08a', '#fb923c', '#94a3b8'],
     speedMin: 1.5,
     speedMax: 6,
@@ -111,6 +133,9 @@ function fireTank(who) {
     baseAngle: shell.vx > 0 ? 0 : Math.PI,
     spreadAngle: 0.75
   });
+
+  // 🔁 Al disparar, termina tu turno (deja ver el proyectil volar)
+  setTimeout(() => passTurn(), 900);
 }
 
 canvas.addEventListener('pointerdown', () => {
@@ -118,11 +143,6 @@ canvas.addEventListener('pointerdown', () => {
   camera.targetZoom = camera.targetZoom > 1.02 ? 1.0 : 1.15;
 });
 
-setInterval(() => {
-  if (t34 && tiger && t34.hp > 0 && tiger.hp > 0) {
-    Math.random() > 0.45 ? fireTank('t34') : fireTank('tiger');
-  }
-}, 2700);
 
 function gameLoop(timestamp) {
   lastTime = timestamp;
@@ -145,8 +165,10 @@ function gameLoop(timestamp) {
     const t34Ground = terrain.getHeightAt(t34.x, baseGroundY);
     const tigerGround = terrain.getHeightAt(tiger.x, baseGroundY);
 
-    const t34Moving = t34.move(W * 0.33, t34Ground);
-    const tigerMoving = tiger.move(W * 0.67, tigerGround);
+    // 🚫 Sin auto-movimiento: los tanques se quedan donde están.
+// El jugador los moverá con taps en el siguiente paso.
+const t34Moving = false;
+const tigerMoving = false;
 
     if (t34Moving && Math.random() < 0.25) {
       PhysicsEngine.spawnParticles(particles, t34.x - 32, t34Ground - 2, 1, {
@@ -248,4 +270,36 @@ function toggleRecording() {
   }
 }
 
-initBattle().then(() => requestAnimationFrame(gameLoop));
+initBattle().then(() => {
+  actualizarIndicadorTurno();
+  requestAnimationFrame(gameLoop);
+});
+.turn-badge {
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 0.85rem;
+  letter-spacing: 1px;
+  border: 2px solid #c9a227;
+  background: #1a1a1a;
+  color: #f0e6c8;
+  transition: all 0.25s ease;
+}
+.turn-badge.turno-ussr { border-color: #ef4444; color: #fca5a5; }
+.turn-badge.turno-ger  { border-color: #94a3b8; color: #cbd5e1; }
+
+.btn-pass {
+  background: #c9a227;
+  color: #1a1a1a;
+  font-weight: bold;
+  border: 2px solid #f0e6c8;
+  padding: 10px 16px;
+  border-radius: 8px;
+}
+.btn-pass:active { transform: scale(0.96); }
+
+#controls button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  filter: grayscale(0.7);
+}
