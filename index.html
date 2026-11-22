@@ -1,40 +1,46 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#3f5c3f" />
   <title>Battle of Kursk 1943 - Armored Simulation</title>
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
 
   <header>
-  <div><strong>KURSK 1943</strong> · Prokhorovka Sector</div>
-  <span id="turn-indicator" class="turn-badge">TURNO: T-34</span>
-  <span class="badge">PURE JS ENGINE</span>
-</header>
+    <div class="header-title"><strong>KURSK 1943</strong><span>· Prokhorovka</span></div>
+    <span id="turn-indicator" class="turn-badge">TURNO: T-34</span>
+  </header>
 
   <div id="canvas-container">
     <canvas id="battlefield"></canvas>
     <div id="hud">
       <div class="stat-box">
-        <div>USSR: T-34/76</div>
+        <div class="stat-name">USSR · T-34/76</div>
         <div class="hp-bar"><div id="hp-t34" class="hp-fill" style="width:100%; background:#ef4444;"></div></div>
       </div>
       <div class="stat-box" style="text-align:right;">
-        <div>GER: Pz.Kpfw. VI Tiger</div>
+        <div class="stat-name">GER · Tiger I</div>
         <div class="hp-bar"><div id="hp-tiger" class="hp-fill" style="width:100%; background:#94a3b8;"></div></div>
       </div>
+    </div>
+    <div id="fin-partida" class="overlay oculto">
+      <h2 id="titulo-fin">¡VICTORIA!</h2>
+      <p id="subtitulo-fin">El enemigo ha sido destruido</p>
+      <button id="btn-reiniciar" class="btn-pass" onclick="resetBattle()">🔄 JUGAR DE NUEVO</button>
     </div>
   </div>
 
   <div id="controls">
-  <button id="btn-fire-t34" class="btn-ussr" onclick="fireTank('t34')">FIRE T-34 (76mm)</button>
-  <button id="btn-fire-tiger" class="btn-ger" onclick="fireTank('tiger')">FIRE TIGER (88mm)</button>
-  <button id="btn-pass" class="btn-pass" onclick="passTurn()">⏭ PASAR TURNO</button>
-  <button id="rec-btn" class="btn-rec" onclick="toggleRecording()">● REC VIDEO</button>
-  <button class="btn-reset" onclick="resetBattle()">RESET SECTOR</button>
-</div>
+    <button id="btn-fire-t34"   class="btn-icon btn-ussr" onclick="fireTank('t34')"   title="Disparar T-34">🔴 T-34</button>
+    <button id="btn-fire-tiger" class="btn-icon btn-ger"  onclick="fireTank('tiger')" title="Disparar Tiger">⚪ TIGER</button>
+    <button id="btn-pass"       class="btn-icon btn-pass" onclick="passTurn()"        title="Pasar turno">⏭ PASAR</button>
+    <button id="btn-music"      class="btn-icon btn-music" onclick="toggleMusic()"    title="Música">🎵 OFF</button>
+    <button id="rec-btn"        class="btn-icon btn-rec"  onclick="toggleRecording()" title="Grabar">● REC</button>
+    <button                     class="btn-icon btn-reset" onclick="resetBattle()"   title="Reiniciar">🔄</button>
+  </div>
 
   <script src="js/audio.js"></script>
   <script src="entities/tank.js"></script>
