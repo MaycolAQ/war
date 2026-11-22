@@ -34,13 +34,11 @@
   </div>
 
   <div id="controls">
-    <button id="btn-fire-t34"   class="btn-icon btn-ussr" onclick="fireTank('t34')"   title="Disparar T-34">🔴 T-34</button>
-    <button id="btn-fire-tiger" class="btn-icon btn-ger"  onclick="fireTank('tiger')" title="Disparar Tiger">⚪ TIGER</button>
-    <button id="btn-pass"       class="btn-icon btn-pass" onclick="passTurn()"        title="Pasar turno">⏭ PASAR</button>
-    <button id="btn-music"      class="btn-icon btn-music" onclick="toggleMusic()"    title="Música">🎵 OFF</button>
-    <button id="rec-btn"        class="btn-icon btn-rec"  onclick="toggleRecording()" title="Grabar">● REC</button>
-    <button                     class="btn-icon btn-reset" onclick="resetBattle()"   title="Reiniciar">🔄</button>
-  </div>
+  <button id="btn-pass"  class="btn-icon btn-pass"  onclick="passTurn()"     title="Pasar turno">⏭ PASAR</button>
+  <button id="btn-music" class="btn-icon btn-music" onclick="toggleMusic()"  title="Música">🎵 OFF</button>
+  <button id="rec-btn"   class="btn-icon btn-rec"   onclick="toggleRecording()" title="Grabar">● REC</button>
+  <button                class="btn-icon btn-reset" onclick="resetBattle()"  title="Reiniciar">🔄</button>
+</div>
 
   <script src="js/audio.js"></script>
   <script src="entities/board.js"></script>
