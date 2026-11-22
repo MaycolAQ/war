@@ -25,6 +25,8 @@ class Unit {
 // Para animación de deslizamiento entre casillas
 this.renderX = null;
 this.renderY = null;
+// Para animación de sacudida al recibir daño
+this.shakeTime = 0;
   }
 
   /** Coloca la unidad en una casilla (col,row) */
