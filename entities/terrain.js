@@ -93,10 +93,10 @@ class SteppeTerrain {
 
     // 1. Dramatic Kursk Summer Sky (Smoke & Fire Haze)
     const sky = ctx.createLinearGradient(0, 0, 0, baseGroundY);
-    sky.addColorStop(0, '#090d16');
-    sky.addColorStop(0.5, '#1e293b');
-    sky.addColorStop(0.85, '#451a03');
-    sky.addColorStop(1, '#9a3412');
+    sky.addColorStop(0, '#1e3a5f');    // azul cielo
+sky.addColorStop(0.5, '#64748b');  // gris azulado
+sky.addColorStop(0.85, '#d97706'); // naranja
+sky.addColorStop(1, '#f59e0b');    // ámbar brillante
     ctx.fillStyle = sky;
     ctx.fillRect(-60, -60, width + 120, baseGroundY + 60);
 
