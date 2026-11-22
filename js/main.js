@@ -308,3 +308,4 @@ canvas.addEventListener('pointerdown', (e) => {
 setupBoard();
 startTurn();
 requestAnimationFrame(render);
+function resetBattle() { setupBoard(); startTurn(); }
