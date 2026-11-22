@@ -70,7 +70,16 @@ this.renderY = null;
 
   /** Dibuja el tanque centrado en su casilla */
   draw(ctx, squares) {
-    const { x, y } = this.getPixelCenter(squares);
+  const center = this.getPixelCenter(squares);
+  if (this.renderX === null) {
+    this.renderX = center.x;
+    this.renderY = center.y;
+  }
+  // Interpolación suave hacia la casilla destino
+  this.renderX += (center.x - this.renderX) * 0.22;
+  this.renderY += (center.y - this.renderY) * 0.22;
+  const x = this.renderX;
+  const y = this.renderY;
     const sq = squares.find(s => s.col === this.col && s.row === this.row);
     const scale = sq ? sq.size / 60 : 1; // se adapta al tamaño de la casilla
 
