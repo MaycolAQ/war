@@ -403,4 +403,4 @@ function toggleMusic() {
 // ====== ARRANQUE ======
 setupBoard();
 startTurn();
-requestAnimationFrame(render);
+requestAnimationFrame(render); 
