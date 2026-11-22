@@ -1,183 +1,124 @@
 /**
- * Battle of Kursk 1943 - Procedural Web Audio Synthesizer
- * Generates tank engines, metallic track clanking, cannon fire, explosions, and ricochets without MP3 files.
+ * BattleMusic — Secuenciador procedural de marchas militares
+ * Sintetiza Katyusha y Erika con osciladores, sin archivos de audio.
  */
-
-const BattleAudio = {
+const BattleMusic = {
   ctx: null,
-  engineOsc: null,
-  engineGain: null,
-  trackTimer: null,
-  isEngineRunning: false,
+  isPlaying: false,
+  currentSong: null,
+  nextNoteTime: 0,
+  currentNoteIndex: 0,
+  timerID: null,
+  lookahead: 25,           // ms
+  scheduleAheadTime: 0.15, // s
+
+  // Frecuencias de notas (A4 = 440 Hz, temperamento igual)
+  noteMap: {
+    'C4':261.63,'C#4':277.18,'D4':293.66,'D#4':311.13,
+    'E4':329.63,'F4':349.23,'F#4':369.99,'G4':392.00,
+    'G#4':415.30,'A4':440.00,'A#4':466.16,'B4':493.88,
+    'C5':523.25,'C#5':554.37,'D5':587.33,'D#5':622.25,
+    'E5':659.25,'F5':698.46,'F#5':739.99,'G5':783.99,
+    'A5':880.00,'B5':987.77,'C6':1046.50
+  },
+
+  melodies: {
+    // Katyusha — aproximación en La menor (reconocible)
+    katyusha: {
+      tempo: 96,
+      notes: [
+        ['A4',0.5],['A4',0.5],['C5',1],['B4',0.5],['A4',0.5],['G4',0.5],['A4',1],
+        ['E4',0.5],['E4',0.5],['A4',1],['G4',0.5],['E4',0.5],['D4',0.5],['E4',1],
+        ['A4',0.5],['A4',0.5],['C5',1],['B4',0.5],['A4',0.5],['G4',0.5],['A4',1],
+        ['E4',0.5],['E4',0.5],['A4',1],['G4',0.5],['E4',0.5],['D4',0.5],['E4',1],
+        ['C5',0.5],['C5',0.5],['E5',1],['D5',0.5],['C5',0.5],['B4',0.5],['C5',1],
+        ['A4',0.5],['A4',0.5],['C5',1],['B4',0.5],['A4',0.5],['G4',0.5],['A4',1],
+        ['-',1],['-',1]
+      ]
+    },
+    // Erika — aproximación en Mi menor (marcial)
+    erika: {
+      tempo: 118,
+      notes: [
+        ['E4',0.5],['E4',0.5],['E4',0.5],['F#4',0.5],['G4',1],['A4',1],
+        ['A4',0.5],['G4',0.5],['F#4',0.5],['E4',1],['B4',0.5],['B4',0.5],
+        ['B4',0.5],['C5',0.5],['B4',0.5],['A4',0.5],['G4',0.5],['A4',0.5],['B4',1],
+        ['E5',0.5],['E5',0.5],['D5',0.5],['C5',0.5],['B4',0.5],['A4',0.5],['G4',1],
+        ['F#4',0.5],['G4',0.5],['A4',0.5],['B4',0.5],['E4',1],['E4',1],
+        ['-',1],['-',1]
+      ]
+    }
+  },
 
   init() {
-    if (!this.ctx) {
-      this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-    }
-    if (this.ctx.state === 'suspended') {
-      this.ctx.resume();
-    }
+    if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    if (this.ctx.state === 'suspended') this.ctx.resume();
   },
 
-  /**
-   * Starts continuous low-frequency diesel engine rumble & periodic metallic track clank
-   */
-  startEngines() {
-    this.init();
-    if (this.isEngineRunning) return;
-
-    // 1. Diesel Engine Rumble (Sawtooth + Lowpass Filter)
-    this.engineOsc = this.ctx.createOscillator();
-    this.engineOsc.type = 'sawtooth';
-    this.engineOsc.frequency.setValueAtTime(34, this.ctx.currentTime); // Deep V-2 / Maybach rumble
-
-    const engineFilter = this.ctx.createBiquadFilter();
-    engineFilter.type = 'lowpass';
-    engineFilter.frequency.setValueAtTime(95, this.ctx.currentTime);
-
-    this.engineGain = this.ctx.createGain();
-    this.engineGain.gain.setValueAtTime(0.08, this.ctx.currentTime);
-
-    this.engineOsc.connect(engineFilter);
-    engineFilter.connect(this.engineGain);
-    this.engineGain.connect(this.ctx.destination);
-    this.engineOsc.start();
-
-    // 2. Rhythmic Steel Tracks Clanking
-    this.trackTimer = setInterval(() => {
-      if (this.ctx && this.ctx.state === 'running') {
-        this.playTrackClank();
-      }
-    }, 220);
-
-    this.isEngineRunning = true;
-  },
-
-  stopEngines() {
-    if (this.engineOsc) {
-      try { this.engineOsc.stop(); } catch (e) {}
-      this.engineOsc = null;
-    }
-    if (this.trackTimer) {
-      clearInterval(this.trackTimer);
-      this.trackTimer = null;
-    }
-    this.isEngineRunning = false;
-  },
-
-  /**
-   * Short metallic click/clank simulating steel caterpillar treads rolling
-   */
-  playTrackClank() {
-    if (!this.ctx) return;
-    const now = this.ctx.currentTime;
-
-    const osc = this.ctx.createOscillator();
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(140 + Math.random() * 45, now);
-    osc.frequency.exponentialRampToValueAtTime(55, now + 0.045);
-
-    const gain = this.ctx.createGain();
-    gain.gain.setValueAtTime(0.035, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.045);
-
-    osc.connect(gain);
-    gain.connect(this.ctx.destination);
-    osc.start(now);
-    osc.stop(now + 0.05);
-  },
-
-  /**
-   * Cannon Shot: High-pressure muzzle blast + sub-bass punch
-   * @param {boolean} isHeavy - True for Tiger I 88mm, False for T-34 76mm
-   */
-  playCannonFire(isHeavy = false) {
-    this.init();
-    const now = this.ctx.currentTime;
-    const duration = isHeavy ? 0.85 : 0.6;
-
-    // 1. Sub-bass punch (Cannon recoil thump)
-    const punchOsc = this.ctx.createOscillator();
-    punchOsc.type = 'sine';
-    punchOsc.frequency.setValueAtTime(isHeavy ? 110 : 140, now);
-    punchOsc.frequency.exponentialRampToValueAtTime(28, now + 0.25);
-
-    const punchGain = this.ctx.createGain();
-    punchGain.gain.setValueAtTime(isHeavy ? 0.85 : 0.65, now);
-    punchGain.gain.exponentialRampToValueAtTime(0.01, now + 0.28);
-
-    punchOsc.connect(punchGain);
-    punchGain.connect(this.ctx.destination);
-    punchOsc.start(now);
-    punchOsc.stop(now + 0.3);
-
-    // 2. White noise blast (Propellant crack)
-    this.playFilteredNoise(duration, isHeavy ? 340 : 520, isHeavy ? 0.85 : 0.65);
-  },
-
-  /**
-   * Armor Impact / Tank Explosion
-   */
-  playExplosion(isPenetration = true) {
-    this.init();
-    const duration = isPenetration ? 1.1 : 0.45;
-    const cutoff = isPenetration ? 240 : 650;
-    const volume = isPenetration ? 0.9 : 0.45;
-    this.playFilteredNoise(duration, cutoff, volume);
-  },
-
-  /**
-   * High-pitched metallic whine when a shell bounces off sloped armor
-   */
-  playRicochet() {
-    this.init();
-    const now = this.ctx.currentTime;
-    const osc = this.ctx.createOscillator();
-    osc.type = 'sine';
-
-    // Classic metallic deflection pitch sweep
-    const startFreq = 1800 + Math.random() * 500;
-    osc.frequency.setValueAtTime(startFreq, now);
-    osc.frequency.exponentialRampToValueAtTime(620, now + 0.32);
-
-    const gain = this.ctx.createGain();
-    gain.gain.setValueAtTime(0.28, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
-
-    osc.connect(gain);
-    gain.connect(this.ctx.destination);
-    osc.start(now);
-    osc.stop(now + 0.36);
-  },
-
-  /**
-   * Helper: Generates filtered white noise bursts
-   */
-  playFilteredNoise(duration, startFreq, volume) {
-    const now = this.ctx.currentTime;
-    const bufferSize = this.ctx.sampleRate * duration;
-    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-    const data = buffer.getChannelData(0);
-
-    for (let i = 0; i < bufferSize; i++) {
-      data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (this.ctx.sampleRate * (duration * 0.28)));
-    }
-
-    const noise = this.ctx.createBufferSource();
-    noise.buffer = buffer;
-
+  playNote(freq, startTime, duration, volume = 0.12) {
+    const osc    = this.ctx.createOscillator();
+    const gain   = this.ctx.createGain();
     const filter = this.ctx.createBiquadFilter();
+
+    // Tono tipo "trompeta marcial": sierra filtrada
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(freq, startTime);
+
     filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(startFreq, now);
-    filter.frequency.exponentialRampToValueAtTime(35, now + duration);
+    filter.frequency.setValueAtTime(2200, startTime);
+    filter.frequency.exponentialRampToValueAtTime(900, startTime + duration);
 
-    const gain = this.ctx.createGain();
-    gain.gain.setValueAtTime(volume, now);
-    gain.gain.exponentialRampToValueAtTime(0.01, now + duration);
+    // Envolvente: ataque rápido, sustain, release
+    gain.gain.setValueAtTime(0.0001, startTime);
+    gain.gain.linearRampToValueAtTime(volume, startTime + 0.02);
+    gain.gain.setValueAtTime(volume, startTime + duration * 0.7);
+    gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
 
-    noise.connect(filter);
+    osc.connect(filter);
     filter.connect(gain);
     gain.connect(this.ctx.destination);
-    noise.start(now);
+    osc.start(startTime);
+    osc.stop(startTime + duration + 0.05);
+  },
+
+  scheduler() {
+    const song = this.melodies[this.currentSong];
+    if (!song) return;
+    const secondsPerBeat = 60 / song.tempo;
+
+    while (this.nextNoteTime < this.ctx.currentTime + this.scheduleAheadTime) {
+      if (this.currentNoteIndex >= song.notes.length) this.currentNoteIndex = 0;
+      const [note, beats] = song.notes[this.currentNoteIndex];
+      const duration = beats * secondsPerBeat;
+
+      if (note !== '-') {
+        this.playNote(this.noteMap[note], this.nextNoteTime, duration * 0.9);
+      }
+      this.nextNoteTime += duration;
+      this.currentNoteIndex++;
+    }
+  },
+
+  start(songName = 'katyusha') {
+    this.init();
+    if (this.isPlaying && this.currentSong === songName) return;
+    this.stop();
+    this.currentSong      = songName;
+    this.currentNoteIndex = 0;
+    this.nextNoteTime     = this.ctx.currentTime + 0.1;
+    this.isPlaying        = true;
+    this.timerID = setInterval(() => this.scheduler(), this.lookahead);
+  },
+
+  stop() {
+    if (this.timerID) { clearInterval(this.timerID); this.timerID = null; }
+    this.isPlaying    = false;
+    this.currentSong  = null;
+  },
+
+  toggle(songName = 'katyusha') {
+    if (this.isPlaying) this.stop();
+    else this.start(songName);
+    return this.isPlaying;
   }
 };
