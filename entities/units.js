@@ -82,11 +82,19 @@ this.shakeTime = 0;
   this.renderY += (center.y - this.renderY) * 0.22;
   const x = this.renderX;
   const y = this.renderY;
+// Sacudida al recibir daño
+let shakeX = 0, shakeY = 0;
+if (this.shakeTime > 0) {
+  shakeX = (Math.random() - 0.5) * this.shakeTime;
+  shakeY = (Math.random() - 0.5) * this.shakeTime;
+  this.shakeTime *= 0.85;
+  if (this.shakeTime < 0.3) this.shakeTime = 0;
+}
     const sq = squares.find(s => s.col === this.col && s.row === this.row);
     const scale = sq ? sq.size / 60 : 1; // se adapta al tamaño de la casilla
 
     ctx.save();
-    ctx.translate(x, y);
+    ctx.translate(x + shakeX, y + shakeY);
     ctx.scale(scale, scale);
 
     // Sombra bajo el tanque
@@ -101,7 +109,7 @@ this.shakeTime = 0;
     const turretColor = isUSSR ? '#4d7c0f' : '#64748b';
 
     // Orugas
-    ctx.fillStyle = '#1c1917';
+    ctx.fillStyle = '#1c1947';
     ctx.fillRect(-24, 4, 48, 12);
 
     // Casco
@@ -137,4 +145,8 @@ this.shakeTime = 0;
 
     ctx.restore();
   }
+}
+/** Provoca sacudida al recibir daño */
+shake(intensity = 8) {
+  this.shakeTime = intensity;
 }
