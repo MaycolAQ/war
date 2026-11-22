@@ -22,6 +22,9 @@ class Unit {
     this.hasMoved   = false;
     this.hasAttacked = false;
     this.alive      = true;
+// Para animación de deslizamiento entre casillas
+this.renderX = null;
+this.renderY = null;
   }
 
   /** Coloca la unidad en una casilla (col,row) */
