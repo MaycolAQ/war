@@ -27,6 +27,17 @@
       </div>
     </div>
     <div id="fin-partida" class="overlay oculto">
+    <div id="tutorial" class="overlay">
+  <h2>⚔️ CÓMO JUGAR</h2>
+  <ul class="tutorial-list">
+    <li>🟨 <strong>Toca tu tanque</strong> para seleccionarlo</li>
+    <li>🟦 <strong>Toca una casilla azul</strong> para moverte</li>
+    <li>🟥 <strong>Toca un enemigo rojo</strong> para atacar</li>
+    <li>⏭ <strong>Pasar turno</strong> si no puedes actuar</li>
+    <li>🏆 <strong>Destruye al Tiger</strong> para ganar</li>
+  </ul>
+  <button id="btn-tutorial-ok" class="btn-pass" onclick="cerrarTutorial()">▶ EMPEZAR</button>
+</div>
       <h2 id="titulo-fin">¡VICTORIA!</h2>
       <p id="subtitulo-fin">El enemigo ha sido destruido</p>
       <button id="btn-reiniciar" class="btn-pass" onclick="resetBattle()">😘 JUGAR DE NUEVO</button>
