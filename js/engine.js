@@ -143,6 +143,61 @@ const PhysicsEngine = {
   },
 
   /**
+   * ✨ NUEVO: Fogonazo instantáneo en la boca del cañón al disparar
+   */
+  createMuzzleFlash(particles, x, y, direction) {
+    // Núcleo blanco-amarillo brillante (1-2 frames)
+    particles.push({
+      x, y,
+      vx: direction * 0.3,
+      vy: 0,
+      size: 14,
+      alpha: 1,
+      decay: 0.18,
+      buoyancy: 0,
+      color: '#fef9c3'
+    });
+    // Corona de chispas naranjas
+    this.spawnParticles(particles, x, y, 10, {
+      colors: ['#fb923c', '#f97316', '#fde047'],
+      speedMin: 2, speedMax: 7,
+      sizeMin: 3, sizeMax: 7,
+      decay: 0.09,
+      buoyancy: -0.02,
+      baseAngle: direction > 0 ? 0 : Math.PI,
+      spreadAngle: 0.6
+    });
+  },
+
+  /**
+   * ✨ NUEVO: Convierte el tanque destruido en chatarra humeante permanente
+   */
+  createWreck(particles, shockwaves, x, y) {
+    // Explosión inicial grande
+    this.createExplosion(particles, shockwaves, x, y, 1.6);
+
+    // Chispas metálicas saliendo de la torreta
+    this.spawnParticles(particles, x, y - 25, 24, {
+      colors: ['#fef08a', '#fb923c', '#94a3b8'],
+      speedMin: 3, speedMax: 9,
+      sizeMin: 2, sizeMax: 5,
+      decay: 0.035,
+      buoyancy: 0.06,
+      baseAngle: -Math.PI / 2,
+      spreadAngle: Math.PI * 0.9
+    });
+
+    // Humo negro denso (columna inicial)
+    this.spawnParticles(particles, x, y - 15, 30, {
+      colors: ['#0f172a', '#1e293b', '#334155'],
+      speedMin: 0.4, speedMax: 2.5,
+      sizeMin: 10, sizeMax: 22,
+      decay: 0.008,
+      buoyancy: -0.08
+    });
+  },
+
+  /**
    * Updates all active projectiles and resolves armor collisions
    */
   updateShells(ctx, state, shells, particles, shockwaves, craters, floatingTexts, callbacks) {
@@ -170,8 +225,11 @@ const PhysicsEngine = {
       const target = s.owner === 't34' ? state.tiger : state.t34;
       const hitWidth = target === state.tiger ? 44 : 36;
 
-      // Check Tank Collision
-      if (target.hp > 0 && Math.abs(s.x - target.x) < hitWidth && s.y > state.groundY - 44) {
+      // ✅ FIX: hitbox vertical realista (torreta → suelo), antes solo era la base
+      const tankTopY = state.groundY - 70;
+      if (target.hp > 0 &&
+          Math.abs(s.x - target.x) < hitWidth &&
+          s.y > tankTopY && s.y < state.groundY) {
         const distance = Math.abs(s.startX - target.x);
         const result = this.calculateBallistics(s, target, distance);
 
@@ -187,6 +245,18 @@ const PhysicsEngine = {
 
         target.hp = Math.max(0, target.hp - result.damage);
         this.createExplosion(particles, shockwaves, s.x, s.y, result.penetrated ? 1.25 : 0.75);
+
+        // 🔥 Humo continuo si el tanque queda dañado (< 40% HP)
+        if (target.hp > 0 && target.hp < target.maxHp * 0.4 && Math.random() < 0.6) {
+          this.spawnParticles(particles, target.x + (Math.random() - 0.5) * 15,
+                              target.y - 25, 2, {
+            colors: ['#1e293b', '#334155'],
+            speedMin: 0.2, speedMax: 1,
+            sizeMin: 5, sizeMax: 10,
+            decay: 0.015,
+            buoyancy: -0.06
+          });
+        }
 
         floatingTexts.push({
           x: s.x,
