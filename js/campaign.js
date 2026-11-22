@@ -1,129 +1,56 @@
-/* Campaign selection and persistence layer; the existing tactical battle remains the combat engine. */
+/* Campaign mission definitions and map/battle integration. */
 (() => {
-  'use strict';
-
-  const STORAGE_KEY = 'kursk1943-campaign-v1';
+  'ng strict';
+  const KEY = 'kursk1943-campaign-v1';
   const missions = [
-    { id: 1, name: 'El puesto avanzado', mapName: 'EL PUESTO AVANZADO', type: 'RECONOCIMIENTO ARMADO', description: 'Una patrulla alemana bloquea la carretera de abastecimiento. Despeja la zona para asegurar el avance del batallón.', difficulty: 1, duration: '5–8 MIN', objective: 'Destruye al Tiger I enemigo', reward: 150 },
-    { id: 2, name: 'Cruce del Psel', mapName: 'CRUCE DEL PSEL', type: 'ASALTO ACORAZADO', description: 'Las fuerzas enemigas protegen un cruce clave. Rompe su defensa y asegura una ruta para las unidades de apoyo.', difficulty: 2, duration: '8–12 MIN', objective: 'Asegura el cruce y elimina al Tiger I', reward: 250 },
-    { id: 3, name: 'Camino a Prokhorovka', mapName: 'CAMINO A PROKHOROVKA', type: 'OFENSIVA DECISIVA', description: 'El último cinturón defensivo separa a tu unidad de Prokhorovka. Avanza y neutraliza la resistencia blindada.', difficulty: 3, duration: '10–15 MIN', objective: 'Abre la ruta a Prokhorovka', reward: 400 }
+    { id:1, title:'El puesto<br>avanzado', name:'EL PUESTO AVANZADO', type:'RECONOCIMIENTO ARMADO', description:'Una patrulla alemana bloquea la carretera. Despeja la zona para asegurar el avance del batallón.', difficulty:1, duration:'5–8 MIN', objective:'Destruye al Tiger I enemigo', reward:150, soviet:'T-34/76', german:'Tiger I', maxHp:100, enemyHp:150, moveRange:2, enemyMove:1, attackRange:2, enemyAttack:2, damage:28, enemyDamage:48, positions:{soviet:[1,3],german:[6,4]} },
+    { id:2, title:'Cruce del<br>Psel', name:'CRUCE DEL PSEL', type:'ASALTO ACORAZADO', description:'Protege el cruce del río y elimina la patrulla blindada que controla el paso.', difficulty:2, duration:'8–12 MIN', objective:'Asegura el cruce y destruye al Panther', reward:250, soviet:'T-34-85', german:'Panther', maxHp:120, enemyHp:160, moveRange:2, enemyMove:2, attackRange:3, enemyAttack:3, damage:34, enemyDamage:52, positions:{soviet:[1,5],german:[6,2]} },
+    { id:3, title:'Camino a<br>Prokhorovka', name:'CAMINO A PROKHOROVKA', type:'OFENSIVA DECISIVA', description:'Rompe el último anillo defensivo y abre la ruta hacia Prokhorovka.', difficulty:3, duration:'10–15 MIN', objective:'Destruye al Jagdtiger y toma el sector', reward:400, soviet:'IS-2', german:'Jagdtiger', maxHp:160, enemyHp:210, moveRange:2, enemyMove:1, attackRange:3, enemyAttack:3, damage:46, enemyDamage:58, positions:{soviet:[1,4],german:[6,3]} }
   ];
+  let campaign = load();
+  let selected = 1;
+  const $ = id => document.getElementById(id);
 
-  let campaign = loadCampaign();
-  let selectedMission = 1;
-  const $ = (id) => document.getElementById(id);
+  function load(){try{const data=JSON.parse(localStorage.getItem(KEY));if(data&&Array.isArray(data.completed))return data}catch(e){console.warn(e)}return {completed:[]}}
+  function save(){localStorage.setItem(KEY,JSON.stringify(campaign))}
+  function unlocked(id){return id===1||campaign.completed.includes(id-1)}
 
-  function loadCampaign() {
-    try {
-      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-      if (saved && Array.isArray(saved.completed)) {
-        return { completed: [...new Set(saved.completed.filter((id) => Number.isInteger(id) && id >= 1 && id <= missions.length))] };
-      }
-    } catch (error) {
-      console.warn('No se pudo leer el progreso de campaña; se iniciará una nueva.', error);
+  function render(){
+    document.querySelectorAll('.mission-node').forEach(node=>{
+      const id=Number(node.dataset.mission),complete=campaign.completed.includes(id),lock=!unlocked(id);
+      node.classList.toggle('is-locked',lock);node.classList.toggle('is-selected',id===selected);node.classList.toggle('is-complete',complete);
+      node.querySelector('.node-caption small').textContent=complete?'MISIÓN COMPLETADA':lock?'SECTOR BLOQUEADO':'OBJETIVO DISPONIBLE';
+      node.querySelector('.node-ring span').textContent=complete?'✓':id===1?'01':id===2?'Ⅱ':'Ⅲ';
+    });
+    const m=missions[selected-1];
+    $('mission-number').textContent=`${String(m.id).padStart(2,'0')} / 03`;$('mission-type').textContent=m.type;$('mission-title').innerHTML=m.title;$('mission-description').textContent=m.description;$('mission-duration').textContent=m.duration;$('mission-objective').textContent=m.objective;$('mission-reward').textContent=m.reward;$('mission-type-icon').textContent=m.id===1?'⌖':m.id===2?'⚑':'✦';
+    document.querySelectorAll('.difficulty i').forEach((bar,i)=>bar.classList.toggle('active',i<m.difficulty));
+    const launch=$('launch-mission');launch.disabled=!unlocked(m.id);launch.querySelector('span').textContent=!unlocked(m.id)?'SECTOR BLOQUEADO':campaign.completed.includes(m.id)?'REPETIR MISIÓN':'INICIAR MISIÓN';
+    $('progress-label').textContent=`${campaign.completed.length} / 3 MISIONES`;$('progress-fill').style.width=`${campaign.completed.length/3*100}%`;
+    $('active-tank-name').innerHTML=`${m.soviet} <span class="ready-tag">LISTO</span>`;$('active-tank-stats').innerHTML=`<span><b>${m.maxHp}</b> HP</span><span><b>${m.attackRange}</b> ALCANCE</span><span><b>${m.damage}</b> DAÑO</span>`;
+  }
+
+  function configureBattle(){
+    if(typeof setupBoard!=='function')return;
+    const m=missions[selected-1];
+    window.CAMPAIGN_MISSION=m;
+    $('hud-soviet-name').textContent=`USSR · ${m.soviet}`;$('hud-german-name').textContent=`GER · ${m.german}`;$('battle-mission-name').textContent=m.name;
+  }
+
+  function openBattle(){if(!unlocked(selected))return;configureBattle();$('campaign-screen').classList.add('is-hidden');$('battle-screen').classList.remove('is-hidden');if(typeof resetBattle==='function')resetBattle();}
+  function closeBattle(){document.querySelectorAll('#fin-partida').forEach(el=>el.classList.add('oculto'));$('battle-screen').classList.add('is-hidden');$('campaign-screen').classList.remove('is-hidden');render()}
+
+  document.querySelectorAll('.mission-node').forEach(node=>node.addEventListener('click',()=>{const id=Number(node.dataset.mission);if(!unlocked(id)){node.querySelector('.node-caption small').textContent='COMPLETA LA MISIÓN ANTERIOR';return}selected=id;render()}));
+  $('launch-mission').addEventListener('click',openBattle);$('back-to-campaign').addEventListener('click',closeBattle);$('battle-result-back').addEventListener('click',closeBattle);
+  $('reset-campaign').addEventListener('click',()=>{if(!confirm('¿Reiniciar la campaña?'))return;campaign={completed:[]};selected=1;save();render()});
+
+  // Wrap the battle result once it exists, so a Soviet victory unlocks the next map mission.
+  window.addEventListener('load',()=>{
+    if(typeof window.finPartida==='function'&&!window.__campaignFinWrapped){
+      window.__campaignFinWrapped=true;const original=window.finPartida;
+      window.finPartida=function(winner){original(winner);if(winner==='USSR'&&!campaign.completed.includes(selected)){campaign.completed.push(selected);campaign.completed.sort((a,b)=>a-b);save();render()}};
     }
-    return { completed: [] };
-  }
-
-  function saveCampaign() {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(campaign)); }
-    catch (error) { console.warn('No se pudo guardar el progreso de campaña.', error); }
-  }
-
-  function isUnlocked(id) {
-    return id === 1 || campaign.completed.includes(id - 1);
-  }
-
-  function renderCampaign() {
-    const completed = new Set(campaign.completed);
-    document.querySelectorAll('.mission-node').forEach((node) => {
-      const id = Number(node.dataset.mission);
-      const unlocked = isUnlocked(id);
-      node.classList.toggle('is-locked', !unlocked);
-      node.classList.toggle('is-selected', id === selectedMission);
-      node.classList.toggle('is-complete', completed.has(id));
-      const caption = node.querySelector('.node-caption small');
-      const badge = node.querySelector('.node-ring span');
-      if (caption) caption.textContent = completed.has(id) ? 'MISIÓN COMPLETADA' : unlocked ? 'OBJETIVO DISPONIBLE' : 'SECTOR BLOQUEADO';
-      if (badge) badge.textContent = completed.has(id) ? '✓' : id === 1 ? '01' : id === 2 ? 'Ⅱ' : 'Ⅲ';
-      node.setAttribute('aria-label', `Misión ${id}, ${missions[id - 1].name}, ${completed.has(id) ? 'completada' : unlocked ? 'disponible' : 'bloqueada'}`);
-    });
-
-    const mission = missions[selectedMission - 1];
-    $('mission-number').textContent = `${String(mission.id).padStart(2, '0')} / 03`;
-    $('mission-type').textContent = mission.type;
-    $('mission-title').innerHTML = mission.id === 1 ? 'El puesto<br>avanzado' : mission.id === 2 ? 'Cruce del<br>Psel' : 'Camino a<br>Prokhorovka';
-    $('mission-description').textContent = mission.description;
-    $('mission-duration').textContent = mission.duration;
-    $('mission-objective').textContent = mission.objective;
-    $('mission-reward').textContent = mission.reward;
-    $('mission-type-icon').textContent = mission.id === 1 ? '⌖' : mission.id === 2 ? '⚑' : '✦';
-    document.querySelectorAll('.difficulty i').forEach((bar, index) => bar.classList.toggle('active', index < mission.difficulty));
-    const launch = $('launch-mission');
-    const unlocked = isUnlocked(mission.id);
-    launch.disabled = !unlocked;
-    launch.querySelector('span').textContent = !unlocked ? 'SECTOR BLOQUEADO' : campaign.completed.includes(mission.id) ? 'REPETIR MISIÓN' : 'INICIAR MISIÓN';
-    const progress = campaign.completed.length;
-    $('progress-label').textContent = `${progress} / 3 MISIONES`;
-    $('progress-fill').style.width = `${(progress / missions.length) * 100}%`;
-  }
-
-  function showBattle() {
-    if (!isUnlocked(selectedMission)) return;
-    $('campaign-screen').classList.add('is-hidden');
-    $('battle-screen').classList.remove('is-hidden');
-    $('battle-mission-name').textContent = missions[selectedMission - 1].mapName;
-    if (typeof resetBattle === 'function') resetBattle();
-  }
-
-  function showCampaign() {
-    $('battle-screen').classList.add('is-hidden');
-    $('campaign-screen').classList.remove('is-hidden');
-    $('fin-partida').classList.add('oculto');
-    renderCampaign();
-  }
-
-  document.querySelectorAll('.mission-node').forEach((node) => {
-    node.addEventListener('click', () => {
-      const id = Number(node.dataset.mission);
-      if (!isUnlocked(id)) {
-        const status = node.querySelector('.node-caption small');
-        if (status) {
-          status.textContent = 'COMPLETA LA MISIÓN ANTERIOR';
-          window.setTimeout(renderCampaign, 1600);
-        }
-        return;
-      }
-      selectedMission = id;
-      renderCampaign();
-    });
   });
 
-  $('launch-mission').addEventListener('click', showBattle);
-  $('back-to-campaign').addEventListener('click', showCampaign);
-  $('battle-result-back').addEventListener('click', showCampaign);
-  $('reset-campaign').addEventListener('click', () => {
-    if (!window.confirm('¿Reiniciar la campaña? Se borrarán las misiones completadas.')) return;
-    campaign = { completed: [] };
-    selectedMission = 1;
-    saveCampaign();
-    renderCampaign();
-  });
-
-  // main.js owns the combat rules. Wrap its result screen to record mission wins without
-  // modifying the existing battle engine or changing how battles are played.
-  if (typeof window.finPartida === 'function') {
-    const originalFinish = window.finPartida;
-    window.finPartida = function (winner) {
-      originalFinish(winner);
-      if (winner === 'USSR' && !campaign.completed.includes(selectedMission)) {
-        campaign.completed.push(selectedMission);
-        campaign.completed.sort((a, b) => a - b);
-        saveCampaign();
-        renderCampaign();
-      }
-    };
-  }
-
-  renderCampaign();
+  render();
 })();
