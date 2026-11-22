@@ -9,9 +9,10 @@
 <body>
 
   <header>
-    <div><strong>KURSK 1943</strong> · Prokhorovka Sector</div>
-    <span class="badge">PURE JS ENGINE</span>
-  </header>
+  <div><strong>KURSK 1943</strong> · Prokhorovka Sector</div>
+  <span id="turn-indicator" class="turn-badge">TURNO: T-34</span>
+  <span class="badge">PURE JS ENGINE</span>
+</header>
 
   <div id="canvas-container">
     <canvas id="battlefield"></canvas>
@@ -28,11 +29,12 @@
   </div>
 
   <div id="controls">
-    <button class="btn-ussr" onclick="fireTank('t34')">FIRE T-34 (76mm)</button>
-    <button class="btn-ger" onclick="fireTank('tiger')">FIRE TIGER (88mm)</button>
-    <button id="rec-btn" class="btn-rec" onclick="toggleRecording()">● REC VIDEO</button>
-    <button class="btn-reset" onclick="resetBattle()">RESET SECTOR</button>
-  </div>
+  <button id="btn-fire-t34" class="btn-ussr" onclick="fireTank('t34')">FIRE T-34 (76mm)</button>
+  <button id="btn-fire-tiger" class="btn-ger" onclick="fireTank('tiger')">FIRE TIGER (88mm)</button>
+  <button id="btn-pass" class="btn-pass" onclick="passTurn()">⏭ PASAR TURNO</button>
+  <button id="rec-btn" class="btn-rec" onclick="toggleRecording()">● REC VIDEO</button>
+  <button class="btn-reset" onclick="resetBattle()">RESET SECTOR</button>
+</div>
 
   <script src="js/audio.js"></script>
   <script src="entities/tank.js"></script>
