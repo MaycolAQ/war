@@ -1,50 +1,86 @@
-# Battle of Kursk 1943 — Armored Combat Simulation
+# KURSK 1943 — Operaciones Blindadas
 
-A browser-based 2D armored combat simulation inspired by the Battle of Kursk. It uses HTML Canvas, CSS, Web Audio, and vanilla JavaScript, with no runtime framework dependencies.
+**KURSK 1943** es un juego táctico de tanques para navegador, inspirado en la campaña de Kursk de 1943. Combina una interfaz de mando estratégica, misiones progresivas y combates por turnos sobre un tablero táctico tipo ajedrez.
 
-**Play the demo:** [maycolaq.github.io/war](https://maycolaq.github.io/war/)
+**Demo:** [maycolaq.github.io/war](https://maycolaq.github.io/war/)
 
 ![Battle of Kursk 1943 gameplay preview](assets/preview.gif)
 
-> This is an educational game simulation. Its simplified physics and unit data are not a complete historical reconstruction.
+> Proyecto educativo: las estadísticas y el comportamiento de combate están simplificados y no constituyen una reconstrucción histórica completa.
 
-## Features
+## Características
 
-- **Canvas battlefield:** procedurally rendered steppe terrain, trenches, anti-tank obstacles, smoke, and persistent shell craters.
-- **Armored combat:** projectile trajectories, distance-based penetration, sloped-armor calculations, damage, and ricochets.
-- **Historical vehicle roster:** unit specifications and simulation parameters are kept in `data/kursk-units.json`.
-- **Procedural sound:** engine, cannon, explosion, and ricochet sounds are generated with the Web Audio API.
-- **Mobile-friendly layout:** responsive controls for portrait and landscape screens.
-- **Battle recording:** where the browser supports it, capture the Canvas and save a battle clip in a supported video format.
+- **Campaña estratégica:** tres misiones desbloqueables desde el mapa de operaciones.
+- **Combate por turnos:** movimiento y ataque por casillas con selección visual.
+- **Unidades históricas:** T-34/76, T-34-85 e IS-2 frente a Tiger I, Panther y Jagdtiger.
+- **Progreso persistente:** misiones completadas y sectores desbloqueados mediante `localStorage`.
+- **Diseño responsive:** interfaz adaptada a escritorio y dispositivos móviles.
+- **Motor visual:** batallas renderizadas en Canvas con efectos, partículas y audio procedural.
+- **Tecnología nativa:** HTML, CSS y JavaScript, sin framework ni dependencias de ejecución.
 
-## Controls
+## Misiones
 
-- **FIRE T-34:** fire the Soviet T-34/76 cannon.
-- **FIRE TIGER:** fire the German Tiger I cannon.
-- **REC VIDEO:** start or stop recording the battlefield. Browser support determines the exported format.
-- **RESET SECTOR:** restart the battle.
-- **Tap the battlefield:** toggle the camera zoom.
+| N.º | Operación | Unidad soviética | Unidad enemiga | Objetivo |
+|---|---|---|---|---|
+| 01 | El puesto avanzado | T-34/76 | Tiger I | Destruir la patrulla blindada |
+| 02 | Cruce del Psel | T-34-85 | Panther | Asegurar el cruce del río |
+| 03 | Camino a Prokhorovka | IS-2 | Jagdtiger | Abrir la ruta hacia Prokhorovka |
 
-The simulation currently fires both tanks automatically during an active battle. The two fire buttons let you trigger additional shots.
+Las misiones se desbloquean progresivamente al conseguir una victoria soviética.
 
-## Run locally
+## Controles
 
-The project uses plain static files. From the repository root, start a local web server so the browser can load the JSON roster:
+- **Tocar una unidad:** seleccionar el tanque activo.
+- **Casilla azul:** mover la unidad seleccionada.
+- **Casilla roja:** atacar al enemigo disponible.
+- **Pasar turno:** entregar la acción al enemigo.
+- **Reiniciar:** volver a configurar la batalla actual.
+- **Volver al mapa:** regresar al centro de mando de campaña.
+
+## Ejecución local
+
+El proyecto utiliza archivos estáticos. Desde la raíz del repositorio, inicia un servidor HTTP:
 
 ```bash
 python3 -m http.server 8000
+```
+
+Abre `http://localhost:8000` en el navegador.
+
+## Tecnologías
+
+- HTML5
+- CSS3
+- JavaScript ES6
+- Canvas 2D
+- Web Audio API
+- Local Storage
+
+## Estructura principal
+
+```text
 war/
 ├── index.html
 ├── css/
 │   └── style.css
 ├── js/
-│   ├── audio.js
+│   ├── campaign.js
+│   ├── campaign-config.js
+│   ├── main.js
 │   ├── engine.js
-│   └── main.js
+│   └── audio.js
 ├── entities/
-│   ├── tank.js
-│   └── terrain.js
+│   ├── board.js
+│   └── units.js
 ├── data/
 │   └── kursk-units.json
 └── assets/
-    └── preview.gif
+```
+
+## Autor
+
+Desarrollado por **MaycolAQ**.
+
+## Licencia
+
+Consulta el archivo `LICENSE` para conocer los términos de uso del proyecto.
