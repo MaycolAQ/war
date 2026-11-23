@@ -3,7 +3,7 @@
 <img src="assets/banner.svg" alt="KURSK 1943 — Turn-based tank battle" width="100%"/>
 
 </div>
-  <title id="banner-title">KURSK 1943 — Turn-based tank battle</title>
+ 
   <desc id="banner-desc">An animated neon arcade banner with a battlefield grid and a tank silhouette.</desc>
   <defs>
     <linearGradient id="sky" x1="0" y1="0" x2="1" y2="1">
