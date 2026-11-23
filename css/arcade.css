@@ -1,0 +1,124 @@
+/* Retro arcade battle presentation. Loaded by main.js to preserve the campaign stylesheet. */
+:root {
+  --arcade-bg: #080914;
+  --neon-cyan: #00e5ff;
+  --neon-magenta: #ff006e;
+  --neon-yellow: #ffd60a;
+  --neon-green: #39ff14;
+  --arcade-font: 'Press Start 2P', 'Courier New', monospace;
+}
+
+.is-hidden { display: none !important; }
+.battle-screen {
+  position: fixed;
+  z-index: 20;
+  inset: 0;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  padding: clamp(8px, 1.6vh, 18px) clamp(10px, 2vw, 28px);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: clamp(8px, 1.4vh, 16px);
+  overflow: hidden;
+  color: #f5f7ff;
+  background: radial-gradient(ellipse at 50% 40%, #171a39 0%, var(--arcade-bg) 72%);
+  font-family: var(--arcade-font);
+  letter-spacing: .06em;
+}
+.battle-screen.is-hidden { display: none !important; }
+.battle-header {
+  display: grid;
+  grid-template-columns: minmax(130px, 1fr) minmax(180px, 2fr) minmax(130px, 1fr);
+  align-items: center;
+  gap: 12px;
+  min-height: 58px;
+}
+.battle-title { text-align: center; text-shadow: 3px 3px 0 var(--neon-magenta), 6px 6px 0 #16162b; }
+.battle-title strong { display: block; color: var(--neon-yellow); font-size: clamp(13px, 2.2vw, 24px); }
+.battle-title span { display: block; margin-top: 7px; color: var(--neon-cyan); font-size: clamp(7px, 1vw, 10px); }
+.back-button, .control-button, .primary-small, .secondary-small {
+  min-height: 44px;
+  border: 2px solid var(--neon-cyan);
+  border-radius: 4px;
+  padding: 10px 12px;
+  color: #fff;
+  background: #10152c;
+  box-shadow: 0 4px 0 #006b7a, 0 0 12px rgba(0,229,255,.38);
+  font: 700 10px/1.5 var(--arcade-font);
+  letter-spacing: .04em;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: filter .08s ease, transform .08s ease, box-shadow .08s ease;
+}
+.back-button { justify-self: start; color: var(--neon-cyan); }
+.back-button:active, .control-button:active, .primary-small:active, .secondary-small:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 #006b7a, 0 0 7px rgba(0,229,255,.4);
+}
+.turn-badge {
+  justify-self: end;
+  padding: 10px 12px;
+  border: 3px solid var(--neon-green);
+  color: var(--neon-green);
+  background: #111827;
+  box-shadow: 0 0 12px rgba(57,255,20,.55);
+  font-size: clamp(8px, 1vw, 11px);
+  text-align: center;
+}
+.turn-badge.turno-ussr { animation: turn-pulse .72s steps(2, end) infinite; }
+.turn-badge.turno-ger { border-color: var(--neon-magenta); color: var(--neon-magenta); box-shadow: 0 0 12px rgba(255,0,110,.55); }
+@keyframes turn-pulse { 50% { filter: brightness(1.7); box-shadow: 0 0 22px var(--neon-green); } }
+#canvas-container {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  border: 3px solid var(--neon-cyan);
+  background: #0a0b19;
+  box-shadow: 0 0 12px var(--neon-cyan), inset 0 0 18px rgba(0,229,255,.14);
+  animation: battle-enter .24s ease-out both;
+}
+@keyframes battle-enter { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+#battlefield { display: block; width: 100%; height: 100%; touch-action: none; }
+#hud { z-index: 2; }
+.stat-box { border: 2px solid var(--neon-green); background: rgba(8,9,20,.88); box-shadow: 0 0 10px rgba(57,255,20,.3); }
+.enemy-stat { border-color: var(--neon-magenta); box-shadow: 0 0 10px rgba(255,0,110,.3); }
+.stat-name { color: var(--neon-yellow); font: 700 9px/1.5 var(--arcade-font); letter-spacing: .04em; }
+.hp-bar { height: 9px; border: 1px solid #fff; background: #151526; }
+.hp-soviet { background: var(--neon-green); box-shadow: 0 0 8px var(--neon-green); }
+.hp-german { background: var(--neon-magenta); box-shadow: 0 0 8px var(--neon-magenta); }
+#controls { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; }
+.control-button { min-width: 170px; min-height: 48px; border-color: var(--neon-yellow); color: var(--neon-yellow); box-shadow: 0 4px 0 #897000, 0 0 10px rgba(255,214,10,.35); }
+.control-button.reset-control { border-color: var(--neon-magenta); color: #fff; box-shadow: 0 4px 0 #90003e, 0 0 10px rgba(255,0,110,.35); }
+.control-button.music-control { border-color: var(--neon-cyan); color: var(--neon-cyan); }
+.overlay { z-index: 5; background: rgba(5,6,16,.82); }
+.overlay-card { border: 3px solid var(--neon-magenta); border-radius: 4px; background: #101126; box-shadow: 0 0 18px rgba(255,0,110,.5); }
+.overlay-kicker { color: var(--neon-cyan); font-size: 8px; }
+.overlay-card h2, .victoria-ussr, .victoria-ger { color: var(--neon-yellow); text-shadow: 3px 3px 0 var(--neon-magenta); font-family: var(--arcade-font); }
+.overlay-card p, .tutorial-list { font-family: 'Courier New', monospace; letter-spacing: .02em; }
+.primary-small { border-color: var(--neon-green); color: var(--neon-green); }
+.secondary-small { border-color: var(--neon-cyan); color: var(--neon-cyan); }
+.oculto { display: none !important; }
+
+@media (max-width: 680px) {
+  .battle-screen { padding: 7px; gap: 7px; }
+  .battle-header { grid-template-columns: 1fr 1.25fr 1fr; gap: 5px; min-height: 48px; }
+  .back-button { min-height: 42px; padding: 6px; font-size: 7px; }
+  .battle-title strong { font-size: 12px; }
+  .battle-title span { font-size: 6px; }
+  .turn-badge { padding: 7px 5px; font-size: 7px; border-width: 2px; }
+  #hud { gap: 6px; }
+  .stat-box { min-width: 0; padding: 6px; }
+  .stat-name { font-size: 7px; }
+  #controls { gap: 7px; }
+  .control-button { flex: 1 1 29%; min-width: 0; min-height: 46px; padding: 7px 4px; font-size: 7px; }
+}
+@media (max-height: 500px) and (orientation: landscape) {
+  .battle-screen { padding: 5px 12px; gap: 5px; }
+  .battle-header { min-height: 38px; }
+  #controls .control-button { min-height: 38px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .battle-screen *, .battle-screen *::before, .battle-screen *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
