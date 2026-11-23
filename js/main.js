@@ -1,65 +1,72 @@
 /**
- * Battle of Kursk 1943 - Juego táctico completo con pulido
+ * Batalla táctica por turnos: movimiento y disparo sobre un tablero 8x8.
  */
-
 const canvas = document.getElementById('battlefield');
-const ctx    = canvas.getContext('2d');
-
-let W = 0, H = 0;
-
+const ctx = canvas.getContext('2d');
+let W = 0;
+let H = 0;
 const board = new Board(8, 8);
 let units = [];
 let selectedUnit = null;
 let validMoves = [];
 let attackTargets = [];
-
 let turnoActual = 'USSR';
 let estadoPartida = 'jugando';
-
 let particles = [];
 let shockwaves = [];
 let floatingTexts = [];
 const camera = { shake: 0 };
 
-// ====== UTILIDADES ======
-function getSquareCenter(col, row) {
-  const sq = board.squares.find(s => s.col === col && s.row === row);
-  if (!sq) return null;
-  return { x: sq.x + sq.size / 2, y: sq.y + sq.size / 2 };
-}
-
-// ====== TUTORIAL ======
-function cerrarTutorial() {
-  const t = document.getElementById('tutorial');
-  if (t) t.classList.add('oculto');
-}
-
-// ====== RESIZE ======
 function resizeCanvas() {
-  const rect = canvas.parentElement.getBoundingClientRect();
-  W = canvas.width  = rect.width  || window.innerWidth;
-  H = canvas.height = rect.height || window.innerHeight * 0.75;
+  const rect = canvas.getBoundingClientRect();
+  // The canvas starts inside a hidden screen. Keep its old dimensions until it is visible.
+  if (rect.width < 1 || rect.height < 1) return;
+  W = Math.round(rect.width);
+  H = Math.round(rect.height);
+  canvas.width = W;
+  canvas.height = H;
+  board.layout(W, H);
 }
-window.addEventListener('resize', () => { resizeCanvas(); board.layout(W, H); });
-resizeCanvas();
+window.resizeBattlefield = resizeCanvas;
+window.addEventListener('resize', resizeCanvas);
 
-// ====== SETUP ======
+function getSquareCenter(col, row) {
+  const square = board.squares.find((item) => item.col === col && item.row === row);
+  return square ? { x: square.x + square.size / 2, y: square.y + square.size / 2 } : null;
+}
+
+function cerrarTutorial() {
+  const tutorial = document.getElementById('tutorial');
+  if (tutorial) tutorial.classList.add('oculto');
+}
+
 function setupBoard() {
+  resizeCanvas();
+  if (!W || !H) {
+    W = canvas.width = window.innerWidth;
+    H = canvas.height = Math.round(window.innerHeight * 0.72);
+  }
   board.layout(W, H);
 
-  units = [
-    new Unit({
-      id: 't34-1', faction: 'USSR', name: 'T-34/76',
-      maxHp: 100, moveRange: 2, attackRange: 2, damage: 28,
-      col: 1, row: 3
-    }),
-    new Unit({
-      id: 'tiger-1', faction: 'GER', name: 'Tiger I',
-      maxHp: 150, moveRange: 1, attackRange: 2, damage: 48,
-      col: 6, row: 4
-    })
-  ];
+  const mission = window.CAMPAIGN_MISSION;
+  const soviet = mission ? {
+    id: 't34-1', faction: 'USSR', name: mission.soviet, maxHp: mission.maxHp,
+    moveRange: mission.moveRange, attackRange: mission.attackRange, damage: mission.damage,
+    col: mission.positions.soviet[0], row: mission.positions.soviet[1]
+  } : {
+    id: 't34-1', faction: 'USSR', name: 'T-34/76', maxHp: 100,
+    moveRange: 2, attackRange: 2, damage: 28, col: 1, row: 3
+  };
+  const german = mission ? {
+    id: 'tiger-1', faction: 'GER', name: mission.german, maxHp: mission.enemyHp,
+    moveRange: mission.enemyMove, attackRange: mission.enemyAttack, damage: mission.enemyDamage,
+    col: mission.positions.german[0], row: mission.positions.german[1]
+  } : {
+    id: 'tiger-1', faction: 'GER', name: 'Tiger I', maxHp: 150,
+    moveRange: 1, attackRange: 2, damage: 48, col: 6, row: 4
+  };
 
+  units = [new Unit(soviet), new Unit(german)];
   turnoActual = 'USSR';
   estadoPartida = 'jugando';
   selectedUnit = null;
@@ -70,41 +77,40 @@ function setupBoard() {
   floatingTexts = [];
   camera.shake = 0;
 
-  const overlay = document.getElementById('fin-partida');
-  if (overlay) overlay.classList.add('oculto');
-
+  const finishOverlay = document.getElementById('fin-partida');
+  if (finishOverlay) finishOverlay.classList.add('oculto');
   updateHud();
   actualizarIndicadorTurno();
 }
 
 function updateHud() {
-  const t34   = units.find(u => u.id === 't34-1');
-  const tiger = units.find(u => u.id === 'tiger-1');
-  const t34Bar   = document.getElementById('hp-t34');
-  const tigerBar = document.getElementById('hp-tiger');
-  if (t34 && t34Bar)     t34Bar.style.width   = (t34.hp / t34.maxHp) * 100 + '%';
-  if (tiger && tigerBar) tigerBar.style.width = (tiger.hp / tiger.maxHp) * 100 + '%';
+  const soviet = units.find((unit) => unit.faction === 'USSR');
+  const german = units.find((unit) => unit.faction === 'GER');
+  const sovietBar = document.getElementById('hp-t34');
+  const germanBar = document.getElementById('hp-tiger');
+  if (soviet && sovietBar) sovietBar.style.width = `${(soviet.hp / soviet.maxHp) * 100}%`;
+  if (german && germanBar) germanBar.style.width = `${(german.hp / german.maxHp) * 100}%`;
 }
 
 function actualizarIndicadorTurno() {
-  const el = document.getElementById('turn-indicator');
-  if (!el) return;
-  el.textContent = turnoActual === 'USSR' ? 'TURNO: T-34' : 'TURNO: TIGER';
-  el.classList.toggle('turno-ussr', turnoActual === 'USSR');
-  el.classList.toggle('turno-ger',  turnoActual === 'GER');
+  const indicator = document.getElementById('turn-indicator');
+  if (!indicator) return;
+  const active = turnoActual === 'USSR' ? 'SOVIÉTICO' : 'ALEMÁN';
+  indicator.textContent = `TURNO: ${active}`;
+  indicator.classList.toggle('turno-ussr', turnoActual === 'USSR');
+  indicator.classList.toggle('turno-ger', turnoActual === 'GER');
 }
 
-// ====== TURNOS ======
 function startTurn() {
-  units.filter(u => u.alive && u.faction === turnoActual).forEach(u => {
-    u.hasMoved = false;
-    u.hasAttacked = false;
+  units.filter((unit) => unit.alive && unit.faction === turnoActual).forEach((unit) => {
+    unit.hasMoved = false;
+    unit.hasAttacked = false;
   });
   selectedUnit = null;
   validMoves = [];
   attackTargets = [];
   actualizarIndicadorTurno();
-  if (turnoActual === 'GER') setTimeout(botTurn, 700);
+  if (turnoActual === 'GER') window.setTimeout(botTurn, 700);
 }
 
 function endTurn() {
@@ -112,85 +118,64 @@ function endTurn() {
   turnoActual = turnoActual === 'USSR' ? 'GER' : 'USSR';
   startTurn();
 }
-
 function passTurn() { endTurn(); }
 function resetBattle() { setupBoard(); startTurn(); }
 
-// ====== SELECCIÓN ======
 function selectUnit(unit) {
   selectedUnit = unit;
   validMoves = [];
   attackTargets = [];
-  if (!unit) return;
+  if (!unit || !unit.alive) return;
 
   if (!unit.hasMoved) {
-    for (const sq of board.squares) {
-      if (unit.canMoveTo(sq.col, sq.row, board.squares, units)) validMoves.push(sq);
-    }
+    validMoves = board.squares.filter((square) =>
+      unit.canMoveTo(square.col, square.row, board.squares, units)
+    );
   }
   if (!unit.hasAttacked) {
-    for (const u of units) {
-      if (u.alive && u.faction !== unit.faction && unit.canAttack(u)) attackTargets.push(u);
-    }
+    attackTargets = units.filter((target) =>
+      target.alive && target.faction !== unit.faction && unit.canAttack(target)
+    );
   }
 }
 
-// ====== ACCIONES ======
 function executeMove(unit, col, row) {
   unit.setSquare(col, row);
   unit.hasMoved = true;
-  selectedUnit = null;
-  validMoves = [];
-  attackTargets = [];
-
-  const c = getSquareCenter(col, row);
-  if (c && typeof PhysicsEngine !== 'undefined') {
-    PhysicsEngine.spawnParticles(particles, c.x, c.y + 10, 10, {
-      colors: ['#78716c', '#a8a29e'],
-      speedMin: 0.5, speedMax: 2,
-      sizeMin: 4, sizeMax: 8,
-      decay: 0.03, buoyancy: -0.02
+  const center = getSquareCenter(col, row);
+  if (center && typeof PhysicsEngine !== 'undefined') {
+    PhysicsEngine.spawnParticles(particles, center.x, center.y + 10, 10, {
+      colors: ['#78716c', '#a8a29e'], speedMin: 0.5, speedMax: 2,
+      sizeMin: 4, sizeMax: 8, decay: 0.03, buoyancy: -0.02
     });
   }
+  // Keep the unit selected after moving so an in-range enemy is immediately highlighted.
+  selectUnit(unit);
 }
 
 function executeAttack(attacker, target) {
-  const dmg = Math.round(attacker.damage * (0.8 + Math.random() * 0.4));
+  if (!attacker.canAttack(target)) return;
+  const damage = Math.round(attacker.damage * (0.8 + Math.random() * 0.4));
   const center = getSquareCenter(target.col, target.row);
-
   if (typeof BattleAudio !== 'undefined') {
     BattleAudio.playCannonFire(attacker.faction === 'GER');
-    setTimeout(() => BattleAudio.playExplosion(true), 120);
+    window.setTimeout(() => BattleAudio.playExplosion(true), 120);
   }
-
   if (center && typeof PhysicsEngine !== 'undefined') {
     const attackerCenter = getSquareCenter(attacker.col, attacker.row);
-    if (attackerCenter) {
-      const dir = target.col >= attacker.col ? 1 : -1;
-      PhysicsEngine.createMuzzleFlash(particles, attackerCenter.x, attackerCenter.y - 20, dir);
-    }
+    if (attackerCenter) PhysicsEngine.createMuzzleFlash(particles, attackerCenter.x, attackerCenter.y - 20, target.col >= attacker.col ? 1 : -1);
     PhysicsEngine.createExplosion(particles, shockwaves, center.x, center.y - 10, 1.1);
-    floatingTexts.push({
-      x: center.x, y: center.y - 30,
-      text: `-${dmg}`, color: '#ef4444', alpha: 1, vy: -0.6
-    });
+    floatingTexts.push({ x: center.x, y: center.y - 30, text: `-${damage}`, color: '#ef4444', alpha: 1, vy: -0.6 });
   }
-
-  // Sacudida de la unidad
   if (target.shake) target.shake(10);
-
-  target.takeDamage(dmg);
+  target.takeDamage(damage);
   attacker.hasAttacked = true;
   camera.shake = 14;
-
   if (!target.alive) {
-    if (center && typeof PhysicsEngine !== 'undefined') {
-      PhysicsEngine.createWreck(particles, shockwaves, center.x, center.y - 10);
-    }
+    if (center && typeof PhysicsEngine !== 'undefined') PhysicsEngine.createWreck(particles, shockwaves, center.x, center.y - 10);
     camera.shake = 22;
-    setTimeout(checkGameOver, 900);
+    window.setTimeout(checkGameOver, 500);
   }
-
   updateHud();
   selectedUnit = null;
   validMoves = [];
@@ -198,209 +183,140 @@ function executeAttack(attacker, target) {
 }
 
 function checkGameOver() {
-  const ussrAlive = units.some(u => u.alive && u.faction === 'USSR');
-  const gerAlive  = units.some(u => u.alive && u.faction === 'GER');
-  if (!ussrAlive || !gerAlive) {
+  const sovietsAlive = units.some((unit) => unit.alive && unit.faction === 'USSR');
+  const germansAlive = units.some((unit) => unit.alive && unit.faction === 'GER');
+  if (!sovietsAlive || !germansAlive) {
     estadoPartida = 'fin';
-    finPartida(!ussrAlive ? 'GER' : 'USSR');
+    finPartida(sovietsAlive ? 'USSR' : 'GER');
   }
 }
 
-function finPartida(ganador) {
+function finPartida(winner) {
   const overlay = document.getElementById('fin-partida');
-  const titulo  = document.getElementById('titulo-fin');
-  const sub     = document.getElementById('subtitulo-fin');
+  const title = document.getElementById('titulo-fin');
+  const subtitle = document.getElementById('subtitulo-fin');
   if (!overlay) return;
-
-  if (ganador === 'USSR') {
-    titulo.textContent = '¡VICTORIA SOVIÉTICA!';
-    titulo.className = 'victoria-ussr';
-    sub.textContent = 'El Tiger ha sido destruido';
+  if (winner === 'USSR') {
+    title.textContent = '¡VICTORIA SOVIÉTICA!';
+    title.className = 'victoria-ussr';
+    subtitle.textContent = 'El tanque enemigo ha sido destruido. Sector asegurado.';
   } else {
-    titulo.textContent = '¡VICTORIA ALEMANA!';
-    titulo.className = 'victoria-ger';
-    sub.textContent = 'El T-34 ha sido destruido';
+    title.textContent = '¡VICTORIA ALEMANA!';
+    title.className = 'victoria-ger';
+    subtitle.textContent = 'Tu tanque ha sido destruido. Puedes reintentar la misión.';
   }
   overlay.classList.remove('oculto');
-
-  // Confeti de partículas
-  if (typeof PhysicsEngine !== 'undefined' && W && H) {
-    for (let i = 0; i < 30; i++) {
-      PhysicsEngine.spawnParticles(particles,
-        W / 2 + (Math.random() - 0.5) * W * 0.8,
-        H / 2, 2, {
-          colors: ganador === 'USSR' ? ['#ef4444', '#fbbf24', '#fef08a'] : ['#94a3b8', '#cbd5e1', '#fef08a'],
-          speedMin: 2, speedMax: 6,
-          sizeMin: 3, sizeMax: 6,
-          decay: 0.008, buoyancy: 0.04
-        });
-    }
+  if (winner === 'USSR' && typeof PhysicsEngine !== 'undefined' && W && H) {
+    for (let i = 0; i < 30; i++) PhysicsEngine.spawnParticles(particles, W / 2 + (Math.random() - 0.5) * W * 0.8, H / 2, 2, {
+      colors: ['#ef4444', '#fbbf24', '#fef08a'], speedMin: 2, speedMax: 6,
+      sizeMin: 3, sizeMax: 6, decay: 0.008, buoyancy: 0.04
+    });
   }
 }
 
-// ====== BOT INTELIGENTE ======
+function manhattan(a, b) { return Math.abs(a.col - b.col) + Math.abs(a.row - b.row); }
+
 function botTurn() {
   if (estadoPartida === 'fin') return;
-  const myUnits = units.filter(u => u.alive && u.faction === 'GER');
-  const enemies = units.filter(u => u.alive && u.faction === 'USSR');
-  if (!myUnits.length || !enemies.length) return;
-
-  const unit = myUnits[0];
-
-  // 1. Prioriza al enemigo más cercano
-  const target = enemies.reduce((a, b) =>
-    manhattan(unit, a) <= manhattan(unit, b) ? a : b
-  );
-
-  // 2. Atacar si puede
-  if (unit.canAttack(target)) {
-    executeAttack(unit, target);
-    setTimeout(endTurn, 900);
+  const enemy = units.find((unit) => unit.alive && unit.faction === 'GER');
+  const targets = units.filter((unit) => unit.alive && unit.faction === 'USSR');
+  if (!enemy || !targets.length) return;
+  const target = targets.reduce((nearest, unit) => manhattan(enemy, unit) < manhattan(enemy, nearest) ? unit : nearest);
+  if (enemy.canAttack(target)) {
+    executeAttack(enemy, target);
+    window.setTimeout(endTurn, 800);
     return;
   }
 
-  // 3. Si está débil (<30% HP) y hay 2 enemigos, huir (en este 1v1 no aplica, pero está listo)
-  // 4. Moverse hacia el enemigo
-  const dx = Math.sign(target.col - unit.col);
-  const dy = Math.sign(target.row - unit.row);
-  const candidates = [];
-  if (Math.abs(target.col - unit.col) > Math.abs(target.row - unit.row)) {
-    if (dx !== 0) candidates.push({ col: unit.col + dx, row: unit.row });
-    if (dy !== 0) candidates.push({ col: unit.col, row: unit.row + dy });
-  } else {
-    if (dy !== 0) candidates.push({ col: unit.col, row: unit.row + dy });
-    if (dx !== 0) candidates.push({ col: unit.col + dx, row: unit.row });
-  }
-
-  let moved = false;
-  for (const c of candidates) {
-    if (unit.canMoveTo(c.col, c.row, board.squares, units)) {
-      executeMove(unit, c.col, c.row);
-      moved = true;
-      break;
-    }
-  }
-
-  setTimeout(() => {
-    if (unit.canAttack(target)) executeAttack(unit, target);
-    setTimeout(endTurn, 700);
-  }, moved ? 800 : 200);
+  const candidates = board.squares
+    .filter((square) => enemy.canMoveTo(square.col, square.row, board.squares, units))
+    .sort((a, b) => manhattan({ col: a.col, row: a.row }, target) - manhattan({ col: b.col, row: b.row }, target));
+  if (candidates.length) executeMove(enemy, candidates[0].col, candidates[0].row);
+  window.setTimeout(() => {
+    if (estadoPartida !== 'fin' && enemy.alive && target.alive && enemy.canAttack(target)) executeAttack(enemy, target);
+    window.setTimeout(endTurn, 650);
+  }, candidates.length ? 650 : 200);
 }
 
-function manhattan(a, b) {
-  return Math.abs(a.col - b.col) + Math.abs(a.row - b.row);
-}
-
-// ====== DIBUJO ======
-function drawHighlights(ctx) {
-  for (const sq of validMoves) {
-    ctx.fillStyle = 'rgba(56, 189, 248, 0.35)';
-    ctx.fillRect(sq.x + 2, sq.y + 2, sq.size - 4, sq.size - 4);
-    ctx.strokeStyle = 'rgba(56, 189, 248, 0.9)';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(sq.x + 2, sq.y + 2, sq.size - 4, sq.size - 4);
-  }
-
-  for (const t of attackTargets) {
-    const sq = board.squares.find(s => s.col === t.col && s.row === t.row);
-    if (!sq) continue;
-    ctx.fillStyle = 'rgba(239, 68, 68, 0.4)';
-    ctx.fillRect(sq.x + 2, sq.y + 2, sq.size - 4, sq.size - 4);
-    ctx.strokeStyle = '#ef4444';
-    ctx.lineWidth = 3;
-    ctx.strokeRect(sq.x + 2, sq.y + 2, sq.size - 4, sq.size - 4);
-  }
-
+function drawHighlights(context) {
+  validMoves.forEach((square) => {
+    context.fillStyle = 'rgba(56,189,248,.42)';
+    context.fillRect(square.x + 2, square.y + 2, square.size - 4, square.size - 4);
+    context.strokeStyle = 'rgba(56,189,248,.95)';
+    context.lineWidth = 2;
+    context.strokeRect(square.x + 2, square.y + 2, square.size - 4, square.size - 4);
+  });
+  attackTargets.forEach((target) => {
+    const square = board.squares.find((item) => item.col === target.col && item.row === target.row);
+    if (!square) return;
+    context.fillStyle = 'rgba(239,68,68,.48)';
+    context.fillRect(square.x + 2, square.y + 2, square.size - 4, square.size - 4);
+    context.strokeStyle = '#ff5147';
+    context.lineWidth = 3;
+    context.strokeRect(square.x + 2, square.y + 2, square.size - 4, square.size - 4);
+  });
   if (selectedUnit) {
-    const sq = board.squares.find(s => s.col === selectedUnit.col && s.row === selectedUnit.row);
-    if (sq) {
-      ctx.strokeStyle = '#c9a227';
-      ctx.lineWidth = 4;
-      ctx.strokeRect(sq.x + 2, sq.y + 2, sq.size - 4, sq.size - 4);
+    const square = board.squares.find((item) => item.col === selectedUnit.col && item.row === selectedUnit.row);
+    if (square) {
+      context.strokeStyle = '#f2c95c';
+      context.lineWidth = 4;
+      context.strokeRect(square.x + 2, square.y + 2, square.size - 4, square.size - 4);
     }
   }
 }
 
 function render() {
-  ctx.clearRect(0, 0, W, H);
-  ctx.save();
-
-  if (camera.shake > 0.2) {
-    ctx.translate((Math.random() - 0.5) * camera.shake,
-                  (Math.random() - 0.5) * camera.shake);
-    camera.shake *= 0.85;
-  }
-
-  ctx.fillStyle = '#2b3d2b';
-  ctx.fillRect(-20, -20, W + 40, H + 40);
-
-  board.draw(ctx, W, H);
-  drawHighlights(ctx);
-
-  units.filter(u => !u.alive).forEach(u => {
-    if (typeof PhysicsEngine !== 'undefined' && Math.random() < 0.08) {
-      const c = getSquareCenter(u.col, u.row);
-      if (c) {
-        PhysicsEngine.spawnParticles(particles, c.x + (Math.random() - 0.5) * 15, c.y - 15, 1, {
-          colors: ['#1e293b', '#334155'],
-          speedMin: 0.3, speedMax: 1,
-          sizeMin: 4, sizeMax: 8,
-          decay: 0.01, buoyancy: -0.05
-        });
-      }
+  if (canvas.width && canvas.height) {
+    ctx.clearRect(0, 0, W, H);
+    ctx.save();
+    if (camera.shake > 0.2) {
+      ctx.translate((Math.random() - 0.5) * camera.shake, (Math.random() - 0.5) * camera.shake);
+      camera.shake *= 0.85;
     }
-  });
-
-  units.filter(u => !u.alive).forEach(u => u.draw(ctx, board.squares));
-  units.filter(u =>  u.alive).forEach(u => u.draw(ctx, board.squares));
-
-  if (typeof PhysicsEngine !== 'undefined') {
-    PhysicsEngine.updateEffects(ctx, particles, shockwaves, floatingTexts);
+    ctx.fillStyle = '#2b3d2b';
+    ctx.fillRect(0, 0, W, H);
+    board.draw(ctx, W, H);
+    drawHighlights(ctx);
+    units.filter((unit) => !unit.alive).forEach((unit) => unit.draw(ctx, board.squares));
+    units.filter((unit) => unit.alive).forEach((unit) => unit.draw(ctx, board.squares));
+    if (typeof PhysicsEngine !== 'undefined') PhysicsEngine.updateEffects(ctx, particles, shockwaves, floatingTexts);
+    ctx.restore();
   }
-
-  ctx.restore();
   requestAnimationFrame(render);
 }
 
-// ====== INTERACCIÓN ======
-canvas.addEventListener('pointerdown', (e) => {
+canvas.addEventListener('pointerdown', (event) => {
   if (typeof BattleMusic !== 'undefined' && !BattleMusic.isPlaying) {
     BattleMusic.start('katyusha');
-    const btn = document.getElementById('btn-music');
-    if (btn) { btn.textContent = '🎵 ON'; btn.classList.add('playing'); }
+    const musicButton = document.getElementById('btn-music');
+    if (musicButton) musicButton.textContent = 'MÚSICA · ON ♫';
   }
-
   if (estadoPartida === 'fin' || turnoActual !== 'USSR') return;
-
   const rect = canvas.getBoundingClientRect();
-  const sq = board.getSquareAt(e.clientX - rect.left, e.clientY - rect.top);
-  if (!sq) return;
+  const square = board.getSquareAt(event.clientX - rect.left, event.clientY - rect.top);
+  if (!square) return;
 
-  const target = attackTargets.find(u => u.col === sq.col && u.row === sq.row);
+  const target = attackTargets.find((unit) => unit.col === square.col && unit.row === square.row);
   if (target && selectedUnit) { executeAttack(selectedUnit, target); return; }
-
-  const moveSq = validMoves.find(s => s.col === sq.col && s.row === sq.row);
-  if (moveSq && selectedUnit) { executeMove(selectedUnit, sq.col, sq.row); return; }
-
-  const clicked = units.find(u => u.alive && u.col === sq.col && u.row === sq.row);
+  const move = validMoves.find((item) => item.col === square.col && item.row === square.row);
+  if (move && selectedUnit) { executeMove(selectedUnit, square.col, square.row); return; }
+  const clicked = units.find((unit) => unit.alive && unit.col === square.col && unit.row === square.row);
   if (clicked && clicked.faction === 'USSR') { selectUnit(clicked); return; }
-
-  selectedUnit = null; validMoves = []; attackTargets = [];
+  // Tapping an enemy out of range leaves the selected tank and its legal moves visible.
+  if (clicked && clicked.faction === 'GER') return;
+  selectedUnit = null;
+  validMoves = [];
+  attackTargets = [];
 });
 
-// ====== MÚSICA ======
 function toggleMusic() {
   if (typeof BattleMusic === 'undefined') return;
-  const btn = document.getElementById('btn-music');
+  const button = document.getElementById('btn-music');
   const song = turnoActual === 'USSR' ? 'katyusha' : 'erika';
   const playing = BattleMusic.toggle(song);
-  if (btn) {
-    btn.textContent = playing ? '🎵 ON' : '🎵 OFF';
-    btn.classList.toggle('playing', playing);
-  }
+  if (button) button.textContent = playing ? 'MÚSICA · ON ♫' : 'MÚSICA · OFF ♫';
 }
 
-// ====== ARRANQUE ======
 setupBoard();
 startTurn();
-requestAnimationFrame(render); 
+requestAnimationFrame(render);
