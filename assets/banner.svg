@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 320" width="1000" height="320">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0a0a1a"/>
+      <stop offset="100%" stop-color="#1a0a2e"/>
+    </linearGradient>
+    <linearGradient id="neon" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#00e5ff"/>
+      <stop offset="50%" stop-color="#ff006e"/>
+      <stop offset="100%" stop-color="#ffd60a"/>
+    </linearGradient>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#00e5ff" stroke-opacity="0.2" stroke-width="1"/>
+    </pattern>
+  </defs>
+
+  <rect width="1000" height="320" fill="url(#bg)"/>
+  <rect width="1000" height="320" fill="url(#grid)">
+    <animateTransform attributeName="transform" type="translate" from="0 0" to="40 40" dur="4s" repeatCount="indefinite"/>
+  </rect>
+
+  <text x="500" y="140" text-anchor="middle" font-family="ui-monospace, Consolas, monospace" font-size="72" font-weight="900" fill="url(#neon)" letter-spacing="8">
+    KURSK 1943
+  </text>
+
+  <text x="500" y="195" text-anchor="middle" font-family="ui-monospace, Consolas, monospace" font-size="20" fill="#00e5ff" letter-spacing="10" opacity="0.9">
+    COMMAND · MANEUVER · SURVIVE
+    <animate attributeName="opacity" values="0.9;0.5;0.9" dur="2.5s" repeatCount="indefinite"/>
+  </text>
+
+  <g transform="translate(150 250)">
+    <rect x="-45" y="-5" width="90" height="22" fill="#00e5ff" opacity="0.85"/>
+    <rect x="-18" y="-22" width="36" height="20" fill="#ff006e" opacity="0.95"/>
+    <rect x="12" y="-14" width="48" height="4" fill="#ffd60a"/>
+  </g>
+
+  <g transform="translate(850 250) scale(-1 1)">
+    <rect x="-45" y="-5" width="90" height="22" fill="#ff006e" opacity="0.85"/>
+    <rect x="-18" y="-22" width="36" height="20" fill="#00e5ff" opacity="0.95"/>
+    <rect x="12" y="-14" width="48" height="4" fill="#ffd60a"/>
+  </g>
+
+  <line x1="0" y1="285" x2="1000" y2="285" stroke="#ff006e" stroke-width="2">
+    <animate attributeName="stroke-opacity" values="0.4;1;0.4" dur="2s" repeatCount="indefinite"/>
+  </line>
+
+  <text x="500" y="308" text-anchor="middle" font-family="ui-monospace, Consolas, monospace" font-size="12" fill="#94a3b8" letter-spacing="4">
+    BATTLE OF KURSK · 1943 · PURE JAVASCRIPT
+  </text>
+</svg>
