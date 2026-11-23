@@ -1,6 +1,8 @@
 <div align="center">
 
-<svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 1000 300" role="img" aria-labelledby="banner-title banner-desc">
+<img src="assets/banner.svg" alt="KURSK 1943 — Turn-based tank battle" width="100%"/>
+
+</div>
   <title id="banner-title">KURSK 1943 — Turn-based tank battle</title>
   <desc id="banner-desc">An animated neon arcade banner with a battlefield grid and a tank silhouette.</desc>
   <defs>
